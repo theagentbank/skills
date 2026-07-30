@@ -1,0 +1,19 @@
+{
+  "name": "@theagentbank/skills",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Installable AgentBank skills for coding agents",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "test": "node --test",
+    "validate": "node scripts/validate.mjs",
+    "check": "npm run validate && npm test",
+    "smoke:mcp": "node scripts/smoke-mcp.mjs",
+    "export:legacy": "node scripts/export-legacy-skill.mjs",
+    "sync:protocol-core": "node scripts/sync-protocol-core.mjs"
+  }
+}

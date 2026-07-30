@@ -1,0 +1,4 @@
+interface:
+  display_name: 'AgentBank Pay'
+  short_description: 'Set up, onboard, and make AgentBank payments'
+  default_prompt: 'Use $agentbank-pay to set up and onboard AgentBank if needed, then complete the requested AgentBank task safely.'
