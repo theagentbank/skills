@@ -29,7 +29,7 @@ export async function renderLegacy(repoRoot) {
 
   return `${frontmatter}
 
-<!-- GENERATED from theagentbank/skills. Do not edit this compatibility copy directly. -->
+<!-- GENERATED from theagentbank/skils. Do not edit this compatibility copy directly. -->
 
 ${body}
 

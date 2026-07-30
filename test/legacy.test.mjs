@@ -11,7 +11,7 @@ test('legacy export is deterministic and self-contained', async () => {
   const first = await renderLegacy(root);
   const second = await renderLegacy(root);
   assert.equal(first, second);
-  assert.match(first, /GENERATED from theagentbank\/skills/);
+  assert.match(first, /GENERATED from theagentbank\/skils/);
   assert.match(first, /# Setup and onboarding/);
   assert.match(first, /# Payments and tracking/);
   assert.doesNotMatch(first, /\]\(references\//);

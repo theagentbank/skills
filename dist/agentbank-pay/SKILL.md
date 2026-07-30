@@ -3,7 +3,7 @@ name: agentbank-pay
 description: Install, onboard, and use AgentBank's MCP for identity, payments, recipients, wallets, tracking, and safe recovery. Use when a user asks to set up AgentBank, onboard a new agent, send or receive money, manage an AgentBank wallet or recipient, or inspect/recover an AgentBank payment.
 ---
 
-<!-- GENERATED from theagentbank/skills. Do not edit this compatibility copy directly. -->
+<!-- GENERATED from theagentbank/skils. Do not edit this compatibility copy directly. -->
 
 # AgentBank Pay
 
