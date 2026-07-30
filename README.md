@@ -6,7 +6,7 @@ onboard and use AgentBank's payment tools safely.
 ## Install
 
 ```bash
-npx skills add theagentbank/skils
+npx skills add theagentbank/skills
 ```
 
 The repository currently supports Codex and Claude Code.
