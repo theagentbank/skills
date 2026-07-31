@@ -53,15 +53,9 @@ two-hop routes. For two hops, pass the intermediate asset and concrete final
 recipient.
 
 Require `status=estimate_ready`. The estimate is ephemeral, has no estimate ID,
-and does not create a payment. Read the returned `source_amount`,
-`destination_amount`, every leg's fee and currency, expiry, route,
-`intermediate_amount`, recipient validation, and returned `hops`.
-
-Treat those returned effective amounts as the review truth. For an exact-source
-two-hop route, the downstream locked quote may cause the exact-output upstream
-leg to report a different `source_amount` from the initially requested
-discovery amount. Surface that difference and obtain confirmation for the
-returned amount; never silently reuse the original amount.
+and does not create a payment. Read exact source/destination amounts, every
+leg's fee and currency, expiry, route, intermediate amount, recipient
+validation, and returned `hops`.
 
 Show one confirmation:
 
@@ -78,8 +72,7 @@ Material warnings: [only relevant warnings]
 
 After confirmation, call `create_payment` with a new stable request ID,
 `confirmed_by_user=true`, the reviewed request, top-level intermediate asset
-for two hops, and the exact current estimate `hops` unchanged. Do not pass an
-estimate ID.
+for two hops, and the exact current estimate `hops`. Do not pass an estimate ID.
 
 For a two-hop route, preserve hop order and `recipient_ref`; the first hop
 delivers directly to the downstream off-ramp destination.
@@ -90,10 +83,9 @@ For `approval_required`, show `approval.approval_url`, explain that the payment
 owner signs in before World ID is shown, state expiry, and ask the human to
 approve in World App. Never request or reconstruct a raw proof.
 
-Payments whose locked USD-stable volume is at most 10 USD may bypass World ID
-and return `approval_ready` with `approval:null`. Do not ask for approval in
-that case; call `continue_payment` directly. Otherwise poll `get_payment` after
-approval and continue when ready.
+If the payment returns `approval_ready` with no approval, call
+`continue_payment` directly. Otherwise poll `get_payment` after approval and
+continue when ready.
 
 ## Follow the instruction exactly
 

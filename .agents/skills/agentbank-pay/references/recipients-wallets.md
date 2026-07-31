@@ -13,12 +13,6 @@ details, or structured bank data, call `create_recipient` before estimating or
 creating a payment. Use the returned `recipient_id` or canonical
 `recipient_fields`; never manually copy unvalidated fields.
 
-For a curated fiat rail, collect a non-empty `holder_name` from the human in
-addition to the QR, bank details, or payment key. Treat it as an unverified
-payout detail. Do not infer it from an EMV QR display label. Core derives
-`bank_name` from its configured bank-code map when available; otherwise it
-retains a caller-provided bank display name.
-
 For local stdio, an image can use absolute `image.path`; remote clients use
 `image.data_base64`. QR images must contain a readable QR. Pass text-only
 screenshots as visible `pasted_text` or `bank_info`.

@@ -18,24 +18,15 @@ Check whether the active client exposes `whoami`, `get_instructions`, and
 If the tools are loaded, call `whoami` immediately and preserve the user's
 original task.
 
-The published MCP package owns the deployed AgentBank endpoint defaults. Do not
-add endpoint environment overrides to a normal installation.
-
-If the tools are absent in Codex and the user explicitly asked to set up or
-onboard AgentBank, run this skill's bootstrap:
+If the tools are absent and the user explicitly asked to set up or onboard
+AgentBank, run this skill's bootstrap:
 
 ```bash
 node "<skill-directory>/scripts/setup-mcp.mjs" --client codex --json
 ```
 
-Use `--client claude` in Claude Code. In Hermes, run:
-
-```bash
-hermes mcp add agentbank --command npx --args -y agent-bank-mcp@latest
-```
-
-Then run `/reload-mcp`. If the active client cannot be determined, ask which
-client the user is using. Do not configure more than one client.
+Use `--client claude` in Claude Code. If the active client cannot be determined,
+ask which client the user is using. Do not run both.
 
 Interpret the result as follows:
 
@@ -47,9 +38,6 @@ Interpret the result as follows:
 After `configured` or `already_configured`, if the MCP tools are still absent,
 tell the user to restart the active coding agent once and repeat:
 `Onboard a new agent`. Do not attempt onboarding before the tools load.
-
-After installing in Hermes, reload the MCP and preserve the original request
-once the tools become available.
 
 For a payment-only request with missing tools, explain the required user-level
 MCP configuration and obtain permission before changing it.

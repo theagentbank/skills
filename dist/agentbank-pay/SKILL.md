@@ -3,7 +3,7 @@ name: agentbank-pay
 description: Install, onboard, and use AgentBank's MCP for identity, payments, recipients, wallets, tracking, and safe recovery. Use when a user asks to set up AgentBank, onboard a new agent, send or receive money, manage an AgentBank wallet or recipient, or inspect/recover an AgentBank payment.
 ---
 
-<!-- GENERATED from theagentbank/skils. Do not edit this compatibility copy directly. -->
+<!-- GENERATED from theagentbank/skills. Do not edit this compatibility copy directly. -->
 
 # AgentBank Pay
 
@@ -20,15 +20,24 @@ Check whether the active client exposes `whoami`, `get_instructions`, and
 If the tools are loaded, call `whoami` immediately and preserve the user's
 original task.
 
-If the tools are absent and the user explicitly asked to set up or onboard
-AgentBank, run this skill's bootstrap:
+The published MCP package owns the deployed AgentBank endpoint defaults. Do not
+add endpoint environment overrides to a normal installation.
+
+If the tools are absent in Codex and the user explicitly asked to set up or
+onboard AgentBank, run this skill's bootstrap:
 
 ```bash
 node "<skill-directory>/scripts/setup-mcp.mjs" --client codex --json
 ```
 
-Use `--client claude` in Claude Code. If the active client cannot be determined,
-ask which client the user is using. Do not run both.
+Use `--client claude` in Claude Code. In Hermes, run:
+
+```bash
+hermes mcp add agentbank --command npx --args -y agent-bank-mcp@latest
+```
+
+Then run `/reload-mcp`. If the active client cannot be determined, ask which
+client the user is using. Do not configure more than one client.
 
 Interpret the result as follows:
 
@@ -40,6 +49,9 @@ Interpret the result as follows:
 After `configured` or `already_configured`, if the MCP tools are still absent,
 tell the user to restart the active coding agent once and repeat:
 `Onboard a new agent`. Do not attempt onboarding before the tools load.
+
+After installing in Hermes, reload the MCP and preserve the original request
+once the tools become available.
 
 For a payment-only request with missing tools, explain the required user-level
 MCP configuration and obtain permission before changing it.
@@ -124,13 +136,21 @@ The bootstrap expects this exact stdio server:
 name: agentbank
 command: npx
 args: -y agent-bank-mcp@latest
-PROTOCOL_BASE_URL=https://protocol.agentbank.world
-APP_BASE_URL=https://staging.agentbank.world
+environment: empty
 ```
 
-It performs a no-op for an exact match, adds a missing configuration, and
-refuses to overwrite a conflict. Run it only through the availability gate in
-the main skill.
+The published package supplies the deployed AgentBank endpoint defaults. New
+installations must not add endpoint overrides.
+
+The bootstrap performs a no-op for an exact match, adds a missing
+configuration, and refuses to overwrite a conflict. For upgrade compatibility,
+it also accepts an otherwise exact configuration containing only the former
+`PROTOCOL_BASE_URL=https://protocol.agentbank.world` and
+`APP_BASE_URL=https://staging.agentbank.world` overrides. Run it only through
+the availability gate in the main skill.
+
+Hermes uses the manual command in the main skill and `/reload-mcp`; the
+bootstrap script supports Codex and Claude Code only.
 
 ## Onboard
 
@@ -194,10 +214,13 @@ Payment World ID approval is a separate per-payment action returned by
 AgentKit wallet verification is also separate:
 
 1. Call `verify_agent_kit` without wallet IDs or addresses.
-2. Show `verification_url` and ask the human to open or scan it in World App.
-3. After completion, call `verify_agent_kit` again until it reports `verified`.
+2. Show the returned hosted `verification_url` unchanged and ask the human to
+   open or scan it in World App.
+3. After completion, call `verify_agent_kit` again through pending or
+   registering states until it returns `status=verified`.
 
-Do not run the AgentKit CLI manually or request a World ID proof.
+Do not rewrite or reconstruct the verification URL, run the AgentKit CLI
+manually, or request a World ID proof.
 
 ---
 
@@ -256,9 +279,15 @@ two-hop routes. For two hops, pass the intermediate asset and concrete final
 recipient.
 
 Require `status=estimate_ready`. The estimate is ephemeral, has no estimate ID,
-and does not create a payment. Read exact source/destination amounts, every
-leg's fee and currency, expiry, route, intermediate amount, recipient
-validation, and returned `hops`.
+and does not create a payment. Read the returned `source_amount`,
+`destination_amount`, every leg's fee and currency, expiry, route,
+`intermediate_amount`, recipient validation, and returned `hops`.
+
+Treat those returned effective amounts as the review truth. For an exact-source
+two-hop route, the downstream locked quote may cause the exact-output upstream
+leg to report a different `source_amount` from the initially requested
+discovery amount. Surface that difference and obtain confirmation for the
+returned amount; never silently reuse the original amount.
 
 Show one confirmation:
 
@@ -275,7 +304,8 @@ Material warnings: [only relevant warnings]
 
 After confirmation, call `create_payment` with a new stable request ID,
 `confirmed_by_user=true`, the reviewed request, top-level intermediate asset
-for two hops, and the exact current estimate `hops`. Do not pass an estimate ID.
+for two hops, and the exact current estimate `hops` unchanged. Do not pass an
+estimate ID.
 
 For a two-hop route, preserve hop order and `recipient_ref`; the first hop
 delivers directly to the downstream off-ramp destination.
@@ -286,9 +316,10 @@ For `approval_required`, show `approval.approval_url`, explain that the payment
 owner signs in before World ID is shown, state expiry, and ask the human to
 approve in World App. Never request or reconstruct a raw proof.
 
-If the payment returns `approval_ready` with no approval, call
-`continue_payment` directly. Otherwise poll `get_payment` after approval and
-continue when ready.
+Payments whose locked USD-stable volume is at most 10 USD may bypass World ID
+and return `approval_ready` with `approval:null`. Do not ask for approval in
+that case; call `continue_payment` directly. Otherwise poll `get_payment` after
+approval and continue when ready.
 
 ## Follow the instruction exactly
 
@@ -342,6 +373,12 @@ When the human supplies an image, QR payload, pasted bank text, account
 details, or structured bank data, call `create_recipient` before estimating or
 creating a payment. Use the returned `recipient_id` or canonical
 `recipient_fields`; never manually copy unvalidated fields.
+
+For a curated fiat rail, collect a non-empty `holder_name` from the human in
+addition to the QR, bank details, or payment key. Treat it as an unverified
+payout detail. Do not infer it from an EMV QR display label. Core derives
+`bank_name` from its configured bank-code map when available; otherwise it
+retains a caller-provided bank display name.
 
 For local stdio, an image can use absolute `image.path`; remote clients use
 `image.data_base64`. QR images must contain a readable QR. Pass text-only

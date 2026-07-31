@@ -4,11 +4,7 @@ import { spawn } from 'node:child_process';
 import readline from 'node:readline';
 
 const child = spawn('npx', ['-y', 'agent-bank-mcp@latest'], {
-  env: {
-    ...process.env,
-    PROTOCOL_BASE_URL: 'https://protocol.agentbank.world',
-    APP_BASE_URL: 'https://staging.agentbank.world',
-  },
+  env: process.env,
   shell: false,
   stdio: ['pipe', 'pipe', 'pipe'],
 });

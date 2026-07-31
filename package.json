@@ -1,12 +1,12 @@
 {
-  "name": "@theagentbank/skils",
+  "name": "@theagentbank/skills",
   "version": "1.0.0",
   "private": true,
   "type": "module",
   "description": "Installable AgentBank skills for coding agents",
   "repository": {
     "type": "git",
-    "url": "https://github.com/theagentbank/skils.git"
+    "url": "https://github.com/theagentbank/skills.git"
   },
   "license": "MIT",
   "engines": {

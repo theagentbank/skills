@@ -8,12 +8,10 @@ export const EXPECTED = Object.freeze({
   name: 'agentbank',
   command: 'npx',
   args: ['-y', 'agent-bank-mcp@latest'],
-  env: {},
-});
-
-const LEGACY_ENV = Object.freeze({
-  PROTOCOL_BASE_URL: 'https://protocol.agentbank.world',
-  APP_BASE_URL: 'https://staging.agentbank.world',
+  env: {
+    PROTOCOL_BASE_URL: 'https://protocol.agentbank.world',
+    APP_BASE_URL: 'https://staging.agentbank.world',
+  },
 });
 
 const EXIT = Object.freeze({
@@ -54,30 +52,16 @@ function normalizeEnv(env = {}) {
   );
 }
 
-function sameCommand(config) {
+function exact(config) {
   if (!config) return false;
+  const currentEnv = normalizeEnv(config.env);
   return (
     config.command === EXPECTED.command &&
-    JSON.stringify(config.args) === JSON.stringify(EXPECTED.args)
+    JSON.stringify(config.args) === JSON.stringify(EXPECTED.args) &&
+    Object.keys(EXPECTED.env).every(
+      (key) => currentEnv[key] === EXPECTED.env[key],
+    )
   );
-}
-
-function exactEnv(config, expected) {
-  const currentEnv = normalizeEnv(config?.env);
-  const expectedEnv = normalizeEnv(expected);
-  return (
-    JSON.stringify(Object.keys(currentEnv).sort()) ===
-      JSON.stringify(Object.keys(expectedEnv).sort()) &&
-    Object.entries(expectedEnv).every(([key, value]) => currentEnv[key] === value)
-  );
-}
-
-function exact(config) {
-  return sameCommand(config) && exactEnv(config, EXPECTED.env);
-}
-
-function legacyCompatible(config) {
-  return sameCommand(config) && exactEnv(config, LEGACY_ENV);
 }
 
 function safeCurrent(config) {
@@ -219,7 +203,7 @@ export function main(argv = process.argv.slice(2)) {
     return EXIT.failed;
   }
   if (before.kind === 'present') {
-    if (exact(before.config) || legacyCompatible(before.config)) {
+    if (exact(before.config)) {
       emit(
         { status: 'already_configured', client: options.client },
         options.json,

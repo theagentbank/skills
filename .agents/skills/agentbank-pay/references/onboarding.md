@@ -8,21 +8,13 @@ The bootstrap expects this exact stdio server:
 name: agentbank
 command: npx
 args: -y agent-bank-mcp@latest
-environment: empty
+PROTOCOL_BASE_URL=https://protocol.agentbank.world
+APP_BASE_URL=https://staging.agentbank.world
 ```
 
-The published package supplies the deployed AgentBank endpoint defaults. New
-installations must not add endpoint overrides.
-
-The bootstrap performs a no-op for an exact match, adds a missing
-configuration, and refuses to overwrite a conflict. For upgrade compatibility,
-it also accepts an otherwise exact configuration containing only the former
-`PROTOCOL_BASE_URL=https://protocol.agentbank.world` and
-`APP_BASE_URL=https://staging.agentbank.world` overrides. Run it only through
-the availability gate in the main skill.
-
-Hermes uses the manual command in the main skill and `/reload-mcp`; the
-bootstrap script supports Codex and Claude Code only.
+It performs a no-op for an exact match, adds a missing configuration, and
+refuses to overwrite a conflict. Run it only through the availability gate in
+the main skill.
 
 ## Onboard
 

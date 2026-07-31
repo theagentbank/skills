@@ -9,7 +9,8 @@ onboard and use AgentBank's payment tools safely.
 npx skills add theagentbank/skills
 ```
 
-The repository currently supports Codex and Claude Code.
+The repository supports Codex and Claude Code with an automated bootstrap, and
+Hermes with the MCP command documented by the skill.
 
 ## Onboard
 
@@ -24,22 +25,32 @@ it is missing. Restart your coding agent once when instructed, then repeat
 `Onboard a new agent`. The agent will open the AgentBank authorization flow and
 finish checking the account and wallet.
 
-The bootstrap configures:
+New Codex and Claude installations configure:
 
 ```text
-PROTOCOL_BASE_URL=https://protocol.agentbank.world
-APP_BASE_URL=https://staging.agentbank.world
 npx -y agent-bank-mcp@latest
 ```
 
-An existing exact configuration is left unchanged. A conflicting server named
+The published package supplies the deployed AgentBank endpoint defaults, so the
+bootstrap does not add environment overrides. An existing exact configuration
+is left unchanged. For upgrade compatibility, the former exact AgentBank
+endpoint overrides are also accepted. Any other conflicting server named
 `agentbank` is reported and never overwritten.
+
+For Hermes, install and reload manually:
+
+```bash
+hermes mcp add agentbank --command npx --args -y agent-bank-mcp@latest
+```
+
+Then run `/reload-mcp`.
 
 ## What is included
 
 - `agentbank-pay`: setup, identity, recipient, wallet, payment, tracking, and
   recovery workflows.
-- A cross-platform MCP bootstrap for Codex and Claude Code.
+- A cross-platform MCP bootstrap for Codex and Claude Code, plus Hermes
+  installation guidance.
 - Deterministic compatibility export for the legacy AgentBank skill endpoint.
 - Static validation and isolated bootstrap tests.
 

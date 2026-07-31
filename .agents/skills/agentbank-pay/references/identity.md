@@ -25,10 +25,7 @@ Payment World ID approval is a separate per-payment action returned by
 AgentKit wallet verification is also separate:
 
 1. Call `verify_agent_kit` without wallet IDs or addresses.
-2. Show the returned hosted `verification_url` unchanged and ask the human to
-   open or scan it in World App.
-3. After completion, call `verify_agent_kit` again through pending or
-   registering states until it returns `status=verified`.
+2. Show `verification_url` and ask the human to open or scan it in World App.
+3. After completion, call `verify_agent_kit` again until it reports `verified`.
 
-Do not rewrite or reconstruct the verification URL, run the AgentKit CLI
-manually, or request a World ID proof.
+Do not run the AgentKit CLI manually or request a World ID proof.
