@@ -9,9 +9,15 @@ export const REFERENCE_FILES = [
   'recovery.md',
 ];
 
+export function normalizeLineEndings(text) {
+  return text.replace(/\r\n?/g, '\n');
+}
+
 export async function renderLegacy(repoRoot) {
   const skillRoot = path.join(repoRoot, 'skills', 'agentbank-pay');
-  const main = await readFile(path.join(skillRoot, 'SKILL.md'), 'utf8');
+  const main = normalizeLineEndings(
+    await readFile(path.join(skillRoot, 'SKILL.md'), 'utf8'),
+  );
   const end = main.indexOf('\n---', 4);
   if (!main.startsWith('---\n') || end < 0) {
     throw new Error('SKILL.md has invalid frontmatter');
@@ -23,7 +29,9 @@ export async function renderLegacy(repoRoot) {
 
   const references = [];
   for (const filename of REFERENCE_FILES) {
-    const content = await readFile(path.join(skillRoot, 'references', filename), 'utf8');
+    const content = normalizeLineEndings(
+      await readFile(path.join(skillRoot, 'references', filename), 'utf8'),
+    );
     references.push(content.trim());
   }
 

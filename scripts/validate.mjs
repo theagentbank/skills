@@ -4,7 +4,11 @@ import { access, readFile, readdir, stat } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseDocument } from 'yaml';
-import { REFERENCE_FILES, renderLegacy } from './legacy.mjs';
+import {
+  normalizeLineEndings,
+  REFERENCE_FILES,
+  renderLegacy,
+} from './legacy.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const skillRoot = path.join(root, 'skills', 'agentbank-pay');
@@ -224,16 +228,27 @@ if (process.platform !== 'win32') {
   }
 }
 
+let trackedLegacy = null;
 try {
-  const trackedLegacy = await readFile(
+  trackedLegacy = await readFile(
     path.join(root, 'dist', 'agentbank-pay', 'SKILL.md'),
     'utf8',
   );
-  if (trackedLegacy !== (await renderLegacy(root))) {
-    errors.push('Legacy artifact drifted; run npm run export:legacy');
+} catch (error) {
+  if (error.code === 'ENOENT') {
+    errors.push('Missing legacy artifact; run npm run export:legacy');
+  } else {
+    errors.push(`Unable to read legacy artifact: ${error.message}`);
   }
-} catch {
-  errors.push('Missing legacy artifact; run npm run export:legacy');
+}
+if (trackedLegacy !== null) {
+  try {
+    if (normalizeLineEndings(trackedLegacy) !== (await renderLegacy(root))) {
+      errors.push('Legacy artifact drifted; run npm run export:legacy');
+    }
+  } catch (error) {
+    errors.push(`Unable to render legacy artifact: ${error.message}`);
+  }
 }
 
 if (errors.length) {
