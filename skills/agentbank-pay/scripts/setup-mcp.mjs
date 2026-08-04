@@ -12,9 +12,9 @@ export const EXPECTED = Object.freeze({
   env: {},
 });
 
-const LEGACY_ENV = Object.freeze({
+const COMPATIBLE_ENV = Object.freeze({
   PROTOCOL_BASE_URL: 'https://protocol.agentbank.world',
-  APP_BASE_URL: 'https://staging.agentbank.world',
+  APP_BASE_URL: 'https://app.agentbank.world',
 });
 
 const EXIT = Object.freeze({
@@ -97,8 +97,8 @@ function exact(config) {
   return sameCommand(config) && exactEnv(config, EXPECTED.env);
 }
 
-function legacyCompatible(config) {
-  return sameCommand(config) && exactEnv(config, LEGACY_ENV);
+function compatibleEnvironment(config) {
+  return sameCommand(config) && exactEnv(config, COMPATIBLE_ENV);
 }
 
 function safeCurrent(config) {
@@ -240,7 +240,7 @@ export function main(argv = process.argv.slice(2)) {
     return EXIT.failed;
   }
   if (before.kind === 'present') {
-    if (exact(before.config) || legacyCompatible(before.config)) {
+    if (exact(before.config) || compatibleEnvironment(before.config)) {
       emit(
         { status: 'already_configured', client: options.client },
         options.json,

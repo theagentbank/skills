@@ -117,12 +117,12 @@ const expected = {
   env: {},
 };
 
-const legacyExpected = {
+const compatibleExpected = {
   command: 'npx',
   args: ['-y', 'agent-bank-mcp@latest'],
   env: {
     PROTOCOL_BASE_URL: 'https://protocol.agentbank.world',
-    APP_BASE_URL: 'https://staging.agentbank.world',
+    APP_BASE_URL: 'https://app.agentbank.world',
   },
 };
 
@@ -159,18 +159,18 @@ for (const client of ['codex', 'claude']) {
     }
   });
 
-  test(`${client}: former exact endpoint overrides remain compatible`, async () => {
-    const files = await fixture(client, legacyExpected);
+  test(`${client}: exact production endpoint overrides remain compatible`, async () => {
+    const files = await fixture(client, compatibleExpected);
     const result = invoke(client, files);
     assert.equal(result.status, 0);
     assert.equal(result.body.status, 'already_configured');
     await assert.rejects(readFile(files.auditFile));
   });
 
-  test(`${client}: additional legacy environment values remain a conflict`, async () => {
+  test(`${client}: additional endpoint environment values remain a conflict`, async () => {
     const files = await fixture(client, {
-      ...legacyExpected,
-      env: { ...legacyExpected.env, EXTRA_SETTING: 'unexpected' },
+      ...compatibleExpected,
+      env: { ...compatibleExpected.env, EXTRA_SETTING: 'unexpected' },
     });
     const result = invoke(client, files);
     assert.equal(result.status, 2);
@@ -180,10 +180,24 @@ for (const client of ['codex', 'claude']) {
 
   test(`${client}: altered endpoint overrides remain a conflict`, async () => {
     const files = await fixture(client, {
-      ...legacyExpected,
+      ...compatibleExpected,
       env: {
-        ...legacyExpected.env,
+        ...compatibleExpected.env,
         APP_BASE_URL: 'https://app.example.test',
+      },
+    });
+    const result = invoke(client, files);
+    assert.equal(result.status, 2);
+    assert.equal(result.body.status, 'conflict');
+    await assert.rejects(readFile(files.auditFile));
+  });
+
+  test(`${client}: retired staging app endpoint remains a conflict`, async () => {
+    const files = await fixture(client, {
+      ...compatibleExpected,
+      env: {
+        ...compatibleExpected.env,
+        APP_BASE_URL: 'https://staging.agentbank.world',
       },
     });
     const result = invoke(client, files);

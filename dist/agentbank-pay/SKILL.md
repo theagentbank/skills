@@ -156,7 +156,7 @@ The bootstrap performs a no-op for an exact match, adds a missing
 configuration, and refuses to overwrite a conflict. For upgrade compatibility,
 it also accepts an otherwise exact configuration containing only the former
 `PROTOCOL_BASE_URL=https://protocol.agentbank.world` and
-`APP_BASE_URL=https://staging.agentbank.world` overrides. Run it only through
+`APP_BASE_URL=https://app.agentbank.world` overrides. Run it only through
 the availability gate in the main skill.
 
 Hermes uses the manual command in the main skill and `/reload-mcp`; the

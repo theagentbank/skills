@@ -23,6 +23,8 @@ This project follows [Semantic Versioning](https://semver.org/).
 - World ID behavior follows the current installation policy and returned
   payment status instead of assuming a universal threshold.
 - The supported Node.js floor is 22.20 to match the current Skills CLI.
+- Explicit compatible endpoint configurations now use
+  `https://app.agentbank.world` instead of the retired staging app domain.
 
 ## [1.0.0] - 2026-07-30
 
