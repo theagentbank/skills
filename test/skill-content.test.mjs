@@ -60,14 +60,57 @@ test('uses the hosted AgentKit verification handoff', async () => {
   assert.match(identity, /run the AgentKit CLI\s+manually/);
 });
 
-test('confirms effective two-hop amounts and approval bypass behavior', async () => {
-  const payments = await read(
-    'skills/agentbank-pay/references/payments.md',
-  );
+test('uses recipient-free estimates and route-only hops', async () => {
+  const [skill, payments, recipients] = await Promise.all([
+    read('skills/agentbank-pay/SKILL.md'),
+    read('skills/agentbank-pay/references/payments.md'),
+    read('skills/agentbank-pay/references/recipients-wallets.md'),
+  ]);
+
+  assert.match(skill, /Keep estimates recipient-free/);
+  assert.match(payments, /Do not provide\s+`recipient_id` or `recipient_fields`/);
+  assert.match(payments, /`next_action\.type=review_estimate`/);
+  assert.match(payments, /returned hops contain route data only/);
+  assert.match(payments, /recipient once in\s+`destination\.recipient_id`/);
+  assert.match(recipients, /Estimates are recipient-free/);
+  assert.doesNotMatch(payments, /recipient validation/);
+});
+
+test('confirms effective two-hop amounts and dynamic approval behavior', async () => {
+  const [skill, onboarding, payments] = await Promise.all([
+    read('skills/agentbank-pay/SKILL.md'),
+    read('skills/agentbank-pay/references/onboarding.md'),
+    read('skills/agentbank-pay/references/payments.md'),
+  ]);
 
   assert.match(payments, /Treat those returned effective amounts as the review truth/);
   assert.match(payments, /different `source_amount`/);
-  assert.match(payments, /exact current estimate `hops` unchanged/);
-  assert.match(payments, /at most 10 USD/);
-  assert.match(payments, /`approval_ready` with `approval:null`/);
+  assert.match(payments, /exact current estimate\s+`hops` unchanged/);
+  assert.match(skill, /update_payment_approval_policy/);
+  assert.match(onboarding, /get_payment_approval_policy/);
+  assert.match(onboarding, /explicit human confirmation/);
+  assert.match(onboarding, /non-USD-stable routes always require World ID/);
+  assert.match(payments, /Do not assume a fixed threshold/);
+  assert.match(payments, /`approval_ready` with\s+`approval:null`/);
+  assert.doesNotMatch(payments, /at most 10 USD/);
+});
+
+test('documents quote-unavailable and latest recipient recovery', async () => {
+  const [payments, recipients, onboarding] = await Promise.all([
+    read('skills/agentbank-pay/references/payments.md'),
+    read('skills/agentbank-pay/references/recipients-wallets.md'),
+    read('skills/agentbank-pay/references/onboarding.md'),
+  ]);
+
+  assert.match(payments, /`QUOTE_UNAVAILABLE`/);
+  assert.match(payments, /`min_amount`/);
+  assert.match(payments, /`fee_ccy`/);
+  assert.match(recipients, /resolvable `bank_name`/);
+  assert.match(recipients, /SeaBank currently\s+canonicalizes to `SEABANK`/);
+  assert.match(recipients, /when returned by `list_recipients`/);
+  assert.match(recipients, /default crypto recipient/);
+  assert.match(recipients, /human-owner scoped/);
+  assert.match(recipients, /chain and address match/);
+  assert.match(onboarding, /default crypto\s+recipient/);
+  assert.match(onboarding, /scoped to the human owner/);
 });

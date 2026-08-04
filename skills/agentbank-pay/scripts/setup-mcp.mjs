@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 import { spawnSync } from 'node:child_process';
+import path from 'node:path';
 import process from 'node:process';
 import { pathToFileURL } from 'node:url';
 
@@ -40,12 +41,32 @@ function parseArgs(argv) {
 }
 
 function run(command, args, options = {}) {
-  return spawnSync(command, args, {
+  const spawnOptions = {
     encoding: 'utf8',
     shell: false,
     windowsHide: true,
     ...options,
-  });
+  };
+  if (process.platform !== 'win32') {
+    return spawnSync(command, args, spawnOptions);
+  }
+
+  const systemRoot = process.env.SystemRoot ?? 'C:\\Windows';
+  const where = spawnSync(
+    path.join(systemRoot, 'System32', 'where.exe'),
+    [command],
+    spawnOptions,
+  );
+  if (where.status !== 0) {
+    const error = new Error(`${command} is not available on PATH`);
+    error.code = 'ENOENT';
+    return { error, status: null, stdout: '', stderr: where.stderr ?? '' };
+  }
+  return spawnSync(
+    process.env.ComSpec ?? path.join(systemRoot, 'System32', 'cmd.exe'),
+    ['/d', '/s', '/c', command, ...args],
+    spawnOptions,
+  );
 }
 
 function normalizeEnv(env = {}) {

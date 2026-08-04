@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { chmod, mkdtemp, readFile, writeFile } from 'node:fs/promises';
+import { chmod, mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
@@ -18,7 +18,7 @@ const setupScript = path.join(
 const fakeClient = `#!/usr/bin/env node
 const fs = require('node:fs');
 const path = require('node:path');
-const client = path.basename(process.argv[1]);
+const client = process.env.FAKE_CLIENT || path.basename(process.argv[1]);
 const args = process.argv.slice(2);
 const stateFile = process.env.FAKE_STATE;
 const auditFile = process.env.FAKE_AUDIT;
@@ -60,13 +60,26 @@ process.exit(9);
 
 async function fixture(client, state = null) {
   const directory = await mkdtemp(path.join(os.tmpdir(), 'agentbank-skill-'));
+  fixtures.push(directory);
   const bin = path.join(directory, 'bin');
-  await import('node:fs/promises').then(({ mkdir }) => mkdir(bin));
-  const executable = path.join(bin, client);
+  await mkdir(bin);
+  const fakeScript = path.join(bin, 'fake-client.cjs');
+  const executable = path.join(
+    bin,
+    process.platform === 'win32' ? `${client}.cmd` : client,
+  );
   const stateFile = path.join(directory, 'state.json');
   const auditFile = path.join(directory, 'audit.json');
-  await writeFile(executable, fakeClient);
-  await chmod(executable, 0o755);
+  if (process.platform === 'win32') {
+    await writeFile(fakeScript, fakeClient.replace(/^#![^\n]+\n/, ''));
+    await writeFile(
+      executable,
+      `@echo off\r\n"${process.execPath}" "${fakeScript}" %*\r\n`,
+    );
+  } else {
+    await writeFile(executable, fakeClient);
+    await chmod(executable, 0o755);
+  }
   if (state) await writeFile(stateFile, JSON.stringify(state));
   return { directory, bin, stateFile, auditFile };
 }
@@ -82,11 +95,21 @@ function invoke(client, files, extra = []) {
         PATH: `${files.bin}${path.delimiter}${process.env.PATH}`,
         FAKE_STATE: files.stateFile,
         FAKE_AUDIT: files.auditFile,
+        FAKE_CLIENT: client,
       },
     },
   );
   return { ...result, body: JSON.parse(result.stdout) };
 }
+
+const fixtures = [];
+test.afterEach(async () => {
+  await Promise.all(
+    fixtures.splice(0).map((directory) =>
+      rm(directory, { recursive: true, force: true }),
+    ),
+  );
+});
 
 const expected = {
   command: 'npx',

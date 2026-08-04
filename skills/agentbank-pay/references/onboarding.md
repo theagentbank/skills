@@ -48,6 +48,33 @@ Browser approval is the only human onboarding step. Never ask for signing
 material, start a second flow while one is pending, or call a legacy
 registration alias.
 
+Wallet binding creates the onboarding-bound Privy wallet as the default crypto
+recipient. Older installations may be backfilled when `list_recipients` finds
+no crypto recipient. The record is scoped to the human owner, so sibling
+installations may see it. Match its chain and address against `list_wallets`,
+then treat a match as the system-created wallet destination rather than an
+unexpected manually saved recipient.
+
+## World ID approval policy
+
+Call `get_payment_approval_policy` when the human asks how this installation's
+payment approval threshold is configured. The policy applies only to the
+current installation; sibling agents owned by the same human have independent
+policies.
+
+`update_payment_approval_policy` changes a security policy. Before calling it:
+
+1. Show the current policy and proposed threshold.
+2. Explain that World ID is required when locked USD-stable volume is greater
+   than that threshold, while non-USD-stable routes always require World ID.
+3. Obtain explicit human confirmation.
+4. Pass `world_id_approval_threshold_usd` as a non-negative decimal string.
+
+The value supports at most 18 fractional digits and must not use a negative,
+exponent, or invalid leading-zero form. Query the current policy instead of
+assuming its default. For every payment, follow the returned
+`approval_required` or `approval_ready` status rather than predicting it.
+
 ## Revoke
 
 When the human asks to log out or reset:

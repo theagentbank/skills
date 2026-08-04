@@ -1,37 +1,96 @@
-# Contributing
+# Contributing to AgentBank Skills
 
-## Local checks
+Thank you for improving the AgentBank agent experience.
 
-Use Node.js 18 or newer:
+## Source of truth
+
+The modular skill under `skills/agentbank-pay/` is canonical:
+
+- `SKILL.md` contains activation, routing, and non-negotiable safety rules.
+- `references/` contains focused workflow details loaded on demand.
+- `scripts/setup-mcp.mjs` contains the conflict-safe client bootstrap.
+
+Do not edit `dist/agentbank-pay/SKILL.md` directly. It is the deterministic,
+single-file compatibility export used by `protocol-core`.
+
+Local client output such as `.agents/`, `.claude/`, `.codex/`, and
+`skills-lock.json` is deliberately ignored and must not be committed.
+
+## Development checks
+
+Use Node.js 22.20 or newer and install the locked dependencies:
 
 ```bash
-npm install
+npm ci
 npm run check
-npx skills add . --list
 ```
 
-The main skill is canonical. Keep detailed workflows in `references/` and link
-them from `SKILL.md` so clients can load them only when needed.
+Before requesting review, run the full external checks:
 
-## Legacy compatibility
+```bash
+npm run smoke:install
+npm run smoke:mcp
+```
 
-Generate the tracked single-file artifact:
+`smoke:install` performs clean copied installations for Codex and Claude Code.
+`smoke:mcp` initializes `agent-bank-mcp@latest` and checks the production tool
+catalog and critical input-schema boundaries. It never starts onboarding or
+moves funds.
+
+## Editing the skill
+
+- Follow the [Agent Skills specification](https://agentskills.io/specification).
+- Keep `SKILL.md` concise and route details into one-level-deep references.
+- Preserve explicit human confirmation for payments, wallet execution,
+  recipient replacement, revocation, and approval-policy changes.
+- Never add credentials, identity proofs, private keys, or examples that look
+  like real secrets.
+- Add a regression test for every workflow or bootstrap behavior change.
+- Update the package and skill metadata versions for a user-visible release.
+- Add user-visible changes to [CHANGELOG.md](CHANGELOG.md).
+
+Regenerate the compatibility artifact after canonical skill changes:
 
 ```bash
 npm run export:legacy
 ```
 
-To update a local `protocol-core` checkout:
+## Synchronizing protocol-core
 
-```bash
-npm run sync:protocol-core -- --target ../protocol-core
-```
+1. Detect source changes:
 
-The sync command only writes the existing AgentBank skill and its OpenAI
-metadata beneath `mcp-agent-server/skills/agentbank-pay`.
+   ```bash
+   npm run check:protocol-drift -- --target ../protocol-core
+   ```
+
+2. Audit the reported commits against MCP registrations, schemas, runtime
+   guidance, and Core behavior.
+3. Update the canonical skill and tests.
+4. Record the audited source commit in `protocol-core-sync.json`.
+5. Regenerate and verify:
+
+   ```bash
+   npm run export:legacy
+   npm run check
+   npm run smoke:mcp
+   ```
+
+6. Sync the compatibility copy:
+
+   ```bash
+   npm run sync:protocol-core -- --target ../protocol-core
+   ```
+
+The sync command writes only the AgentBank skill and OpenAI interface metadata
+beneath `mcp-agent-server/skills/agentbank-pay`.
 
 ## Pull requests
 
-- Never commit credentials, private keys, tokens, or World ID proofs.
-- Add or update tests for bootstrap behavior.
-- Run `npm run check` before opening a pull request.
+Keep changes narrowly scoped and explain:
+
+- the user-visible behavior being changed;
+- the protocol or client evidence behind it;
+- safety implications;
+- commands used to validate it.
+
+Complete the repository pull request template before requesting review.

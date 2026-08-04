@@ -1,23 +1,39 @@
 {
   "name": "@theagentbank/skills",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "private": true,
   "type": "module",
   "description": "Installable AgentBank skills for coding agents",
+  "keywords": [
+    "agent-skills",
+    "agentbank",
+    "mcp",
+    "payments"
+  ],
+  "homepage": "https://github.com/theagentbank/skills#readme",
+  "bugs": {
+    "url": "https://github.com/theagentbank/skills/issues"
+  },
   "repository": {
     "type": "git",
     "url": "https://github.com/theagentbank/skills.git"
   },
   "license": "MIT",
   "engines": {
-    "node": ">=18"
+    "node": ">=22.20.0"
   },
   "scripts": {
     "test": "node --test",
     "validate": "node scripts/validate.mjs",
     "check": "npm run validate && npm test",
+    "check:all": "npm run check && npm run smoke:install && npm run smoke:mcp",
+    "check:protocol-drift": "node scripts/check-protocol-drift.mjs",
+    "smoke:install": "node scripts/smoke-install.mjs",
     "smoke:mcp": "node scripts/smoke-mcp.mjs",
     "export:legacy": "node scripts/export-legacy-skill.mjs",
     "sync:protocol-core": "node scripts/sync-protocol-core.mjs"
+  },
+  "devDependencies": {
+    "yaml": "2.9.0"
   }
 }

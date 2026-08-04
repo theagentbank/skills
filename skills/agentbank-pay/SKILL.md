@@ -1,6 +1,11 @@
 ---
 name: agentbank-pay
 description: Install, onboard, and use AgentBank's MCP for identity, payments, recipients, wallets, tracking, and safe recovery. Use when a user asks to set up AgentBank, onboard a new agent, send or receive money, manage an AgentBank wallet or recipient, or inspect/recover an AgentBank payment.
+license: MIT
+compatibility: Designed for Codex, Claude Code, and Hermes. Installation requires Node.js 22.20+ and internet access.
+metadata:
+  author: theagentbank
+  version: "1.1.0"
 ---
 
 # AgentBank Pay
@@ -65,7 +70,8 @@ one-time restart.
 - Never infer recipient fields, wallet addresses, token contracts, chains,
   decimals, amounts, or calldata from weak context.
 - Use decimal strings for human amounts and structured asset objects.
-- Resolve recipient data before estimating a payment.
+- Keep estimates recipient-free. Resolve recipient data only after the human
+  elects to create the reviewed route and before `create_payment`.
 - Show recipient, send amount, receive amount, every fee and currency, route,
   expiry, and material warnings before creating a payment.
 - Set `confirmed_by_user=true` only after the human confirms that complete
@@ -74,6 +80,10 @@ one-time restart.
 - A transaction receipt is evidence, not payment completion. Trust
   `get_payment`.
 - Reuse a `request_id` only to retry the identical mutation and payload.
+- Treat an approval-threshold update as a security-policy change. Call
+  `update_payment_approval_policy` only after explicit human confirmation.
+- Follow the payment's returned approval status. Never infer World ID behavior
+  from a fixed threshold.
 - Never expose partner identity or use hidden primitive intent, route,
   approval, settlement, or raw-swap mutations.
 
@@ -113,7 +123,7 @@ Load only the references needed for the current task.
 ## Tool groups
 
 ```text
-Setup: whoami, begin_agent_onboarding, wait_for_agent_onboarding, get_installation_status, get_account_status, check_my_scopes, revoke_agent
+Setup/security: whoami, begin_agent_onboarding, wait_for_agent_onboarding, get_installation_status, get_account_status, check_my_scopes, get_payment_approval_policy, update_payment_approval_policy, revoke_agent
 Identity: check_verification_status, do_kyc, get_verification_guidance, verify_agent_kit
 Discovery: list_currencies, get_supported_payment_capabilities, list_quote_book_pairs, browse_quote_book, get_ramp_quote, estimate_payment
 Payments: create_payment, continue_payment, execute_payment_instruction, get_payment, list_payments, cancel_payment, correct_payment_recipient

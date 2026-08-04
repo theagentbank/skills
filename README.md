@@ -1,74 +1,118 @@
 # AgentBank Skills
 
-AgentBank's official agent skills. Install once, then ask your coding agent to
-onboard and use AgentBank's payment tools safely.
+[![Validate](https://github.com/theagentbank/skills/actions/workflows/validate.yml/badge.svg)](https://github.com/theagentbank/skills/actions/workflows/validate.yml)
+[![Agent Skills](https://img.shields.io/badge/Agent%20Skills-compatible-111827)](https://agentskills.io)
+[![License: MIT](https://img.shields.io/badge/license-MIT-16a34a)](LICENSE)
 
-## Install
+Official [Agent Skills](https://agentskills.io) for onboarding and operating an
+AgentBank payment agent. The skill combines concise safety rules with on-demand
+references for identity, recipients, wallets, payments, tracking, and recovery.
 
-```bash
-npx skills add theagentbank/skills
-```
+## Quick start
 
-The repository supports Codex and Claude Code with an automated bootstrap, and
-Hermes with the MCP command documented by the skill.
+1. Install the skill:
 
-## Onboard
+   ```bash
+   npx skills add theagentbank/skills
+   ```
 
-After installation, tell your agent:
+   To select it explicitly, add `--skill agentbank-pay`.
 
-```text
-Onboard a new agent
-```
+2. Ask your coding agent:
 
-On the first run, the skill safely adds the `agentbank` MCP configuration when
-it is missing. Restart your coding agent once when instructed, then repeat
-`Onboard a new agent`. The agent will open the AgentBank authorization flow and
-finish checking the account and wallet.
+   ```text
+   Onboard a new agent
+   ```
 
-New Codex and Claude installations configure:
+3. If the AgentBank MCP is missing, the skill safely configures it for Codex or
+   Claude Code. Restart that client once when instructed, then repeat the same
+   onboarding request.
 
-```text
-npx -y agent-bank-mcp@latest
-```
+4. Open the returned AgentBank authorization URL. After approval, the agent
+   verifies the installation, account, scopes, and bound wallet.
 
-The published package supplies the deployed AgentBank endpoint defaults, so the
-bootstrap does not add environment overrides. An existing exact configuration
-is left unchanged. For upgrade compatibility, the former exact AgentBank
-endpoint overrides are also accepted. Any other conflicting server named
-`agentbank` is reported and never overwritten.
+The Skills CLI installs files only; it does not run repository post-install
+hooks. MCP setup begins when the installed skill handles the onboarding request.
 
-For Hermes, install and reload manually:
+## Supported clients
+
+| Client | MCP setup | Reload step |
+| --- | --- | --- |
+| Codex | Automatic, conflict-safe bootstrap | Start a new conversation after first setup |
+| Claude Code | Automatic user-scoped, conflict-safe bootstrap | Restart Claude Code after first setup |
+| Hermes | Manual command shown below | Run `/reload-mcp` |
+
+Hermes MCP setup:
 
 ```bash
 hermes mcp add agentbank --command npx --args -y agent-bank-mcp@latest
 ```
 
-Then run `/reload-mcp`.
+New installations run the published MCP package without endpoint overrides:
 
-## What is included
+```text
+npx -y agent-bank-mcp@latest
+```
 
-- `agentbank-pay`: setup, identity, recipient, wallet, payment, tracking, and
-  recovery workflows.
-- A cross-platform MCP bootstrap for Codex and Claude Code, plus Hermes
-  installation guidance.
-- Deterministic compatibility export for the legacy AgentBank skill endpoint.
-- Static validation and isolated bootstrap tests.
+The package owns the deployed AgentBank endpoint defaults. The bootstrap accepts
+the former exact endpoint overrides for upgrade compatibility, but refuses to
+replace any other conflicting MCP server named `agentbank`.
+
+## What the skill covers
+
+- Agent onboarding, readiness, scopes, logout, and per-installation approval
+  policy
+- KYC, World ID handoffs, and AgentKit wallet verification
+- Live route discovery and recipient-free payment estimates
+- Fiat and crypto recipient canonicalization
+- Shared Privy wallet balances and server-owned instruction execution
+- Direct and explicit two-hop payments
+- Durable tracking, cancellation, correction, and safe recovery
+
+The main [`SKILL.md`](skills/agentbank-pay/SKILL.md) stays compact and loads
+focused files from `references/` only when a workflow needs them.
+
+## Safety model
+
+- The skill never asks for private keys, seed phrases, JWTs, Privy tokens, or
+  World ID proofs.
+- Existing conflicting MCP configuration is reported and never overwritten.
+- Payment creation and execution require explicit human confirmation.
+- AgentBank Core remains authoritative for routes, approvals, instructions,
+  transaction verification, and terminal payment state.
+- Receipts and transaction hashes are evidence; only `get_payment` determines
+  payment completion.
+
+Review installed skills before use: agent skills can instruct coding agents to
+run local commands and call connected tools.
+
+## Requirements
+
+- Node.js 22.20 or newer (required by the current Skills CLI)
+- Internet access for `npx`, AgentBank, and authorization pages
+- Codex, Claude Code, or Hermes with local MCP support
+
+For installation and MCP troubleshooting, see [SUPPORT.md](SUPPORT.md). Report
+vulnerabilities using [SECURITY.md](SECURITY.md).
 
 ## Development
 
-Requires Node.js 18 or newer.
-
 ```bash
-npm install
+npm ci
 npm run check
+npm run smoke:install
+npm run smoke:mcp
 ```
 
-Preview the MCP configuration without changing it:
+Maintainers can detect protocol drift with:
 
 ```bash
-node skills/agentbank-pay/scripts/setup-mcp.mjs --client codex --check
-node skills/agentbank-pay/scripts/setup-mcp.mjs --client claude --check
+npm run check:protocol-drift -- --target ../protocol-core
 ```
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for the validation and compatibility
-workflow.
+See [CONTRIBUTING.md](CONTRIBUTING.md) for the source-of-truth and generated
+compatibility workflow.
+
+## License
+
+[MIT](LICENSE)

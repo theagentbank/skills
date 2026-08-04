@@ -1,0 +1,33 @@
+# Changelog
+
+All notable user-visible changes are recorded here.
+
+This project follows [Semantic Versioning](https://semver.org/).
+
+## [1.1.0] - 2026-08-04
+
+### Added
+
+- Per-installation World ID approval-policy guidance and tool-catalog checks.
+- Quote-unavailable recovery using executable quote-book bands and fees.
+- Protocol-core drift tracking and clean-install smoke tests.
+- Support, security, and contributor documentation for public distribution.
+
+### Changed
+
+- Estimates are recipient-free; the selected recipient is supplied once to
+  `create_payment.destination` after route review.
+- Public payment hops contain route data only; MCP injects recipient plumbing.
+- Recipient guidance covers bank-name canonicalization and the system-created
+  human-owner-scoped default Privy wallet recipient.
+- World ID behavior follows the current installation policy and returned
+  payment status instead of assuming a universal threshold.
+- The supported Node.js floor is 22.20 to match the current Skills CLI.
+
+## [1.0.0] - 2026-07-30
+
+### Added
+
+- Initial `agentbank-pay` skill for Codex, Claude Code, and Hermes.
+- Conflict-safe MCP bootstrap, modular workflow references, deterministic
+  legacy export, and automated validation.

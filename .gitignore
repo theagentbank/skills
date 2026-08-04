@@ -2,3 +2,9 @@ node_modules/
 .DS_Store
 *.log
 .tmp/
+
+# Local skill-client installations are consumer state, not source.
+.agents/
+.claude/
+.codex/
+skills-lock.json

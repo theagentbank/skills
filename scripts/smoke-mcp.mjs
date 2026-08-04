@@ -14,10 +14,13 @@ const requiredTools = [
   'get_instructions',
   'begin_agent_onboarding',
   'wait_for_agent_onboarding',
+  'get_payment_approval_policy',
+  'update_payment_approval_policy',
 ];
 let stderr = '';
 let initialized = false;
 let settled = false;
+let serverVersion = 'unknown';
 
 child.stderr.on('data', (chunk) => {
   stderr += chunk.toString();
@@ -41,7 +44,7 @@ function finish(error, details) {
     process.exitCode = 1;
   } else {
     process.stdout.write(
-      `MCP initialized; found ${details.count} tools including ${requiredTools.join(', ')}\n`,
+      `MCP ${serverVersion} initialized; found ${details.count} tools including ${requiredTools.join(', ')}\n`,
     );
   }
 }
@@ -62,6 +65,15 @@ readline.createInterface({ input: child.stdout }).on('line', (line) => {
   }
 
   if (message.id === 1 && message.result && !initialized) {
+    if (message.result.serverInfo?.name !== 'agent-bank-mcp') {
+      finish(
+        new Error(
+          `Unexpected MCP server name: ${message.result.serverInfo?.name ?? '(missing)'}`,
+        ),
+      );
+      return;
+    }
+    serverVersion = message.result.serverInfo.version ?? 'unknown';
     initialized = true;
     send({ jsonrpc: '2.0', method: 'notifications/initialized' });
     send({ jsonrpc: '2.0', id: 2, method: 'tools/list', params: {} });
@@ -73,12 +85,52 @@ readline.createInterface({ input: child.stdout }).on('line', (line) => {
       finish(new Error(`tools/list failed: ${JSON.stringify(message.error)}`));
       return;
     }
-    const names = new Set(
-      (message.result?.tools ?? []).map((tool) => tool.name),
-    );
+    const tools = message.result?.tools ?? [];
+    const names = new Set(tools.map((tool) => tool.name));
     const missing = requiredTools.filter((name) => !names.has(name));
     if (missing.length) {
       finish(new Error(`Missing required tools: ${missing.join(', ')}`));
+      return;
+    }
+
+    const byName = new Map(tools.map((tool) => [tool.name, tool]));
+    const policyField =
+      byName.get('update_payment_approval_policy')?.inputSchema?.properties
+        ?.world_id_approval_threshold_usd;
+    if (policyField?.type !== 'string') {
+      finish(
+        new Error(
+          'update_payment_approval_policy must accept a string world_id_approval_threshold_usd',
+        ),
+      );
+      return;
+    }
+
+    const estimateDestination =
+      byName.get('estimate_payment')?.inputSchema?.properties?.destination
+        ?.properties ?? {};
+    const createDestination =
+      byName.get('create_payment')?.inputSchema?.properties?.destination
+        ?.properties ?? {};
+    if (
+      'recipient_id' in estimateDestination ||
+      'recipient_fields' in estimateDestination ||
+      !('recipient_id' in createDestination) ||
+      !('recipient_fields' in createDestination)
+    ) {
+      finish(
+        new Error(
+          'MCP schemas do not preserve the recipient-free estimate/create boundary',
+        ),
+      );
+      return;
+    }
+
+    const hopProperties =
+      byName.get('create_payment')?.inputSchema?.properties?.hops?.items
+        ?.properties ?? {};
+    if ('recipient_fields' in hopProperties || 'recipient_ref' in hopProperties) {
+      finish(new Error('create_payment public hops must contain route data only'));
       return;
     }
     finish(null, { count: names.size });

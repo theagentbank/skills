@@ -8,12 +8,27 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: validate-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  check:
-    runs-on: ubuntu-latest
+  repository:
+    name: ${{ matrix.os }} / Node ${{ matrix.node }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
     strategy:
+      fail-fast: false
       matrix:
-        node: [20, 22]
+        include:
+          - os: ubuntu-latest
+            node: 22.20.0
+          - os: ubuntu-latest
+            node: 24
+          - os: macos-latest
+            node: 22.20.0
+          - os: windows-latest
+            node: 22.20.0
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -22,4 +37,17 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run check
-      - run: npx -y skills@1.5.9 add . --list
+      - run: npm run smoke:install
+
+  live-mcp:
+    name: Published MCP contract
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.20.0
+          cache: npm
+      - run: npm ci
+      - run: npm run smoke:mcp
