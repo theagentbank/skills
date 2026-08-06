@@ -39,14 +39,31 @@ test('documents the manual Hermes installation and reload flow', async () => {
   assert.match(skill, /run `\/reload-mcp`/);
 });
 
-test('requires human-provided holder names for curated fiat recipients', async () => {
+test('documents client-affine credential recovery without duplicate onboarding', async () => {
+  const [skill, onboarding] = await Promise.all([
+    read('skills/agentbank-pay/SKILL.md'),
+    read('skills/agentbank-pay/references/onboarding.md'),
+  ]);
+
+  assert.match(skill, /configured AgentBank MCP server in the active\s+client and profile/);
+  assert.match(skill, /post-restart call succeeds/);
+  assert.match(onboarding, /status=authorized[\s\S]*resumed=true/);
+  assert.match(onboarding, /CREDENTIAL_STORE_CORRUPT/);
+  assert.match(onboarding, /never start duplicate onboarding/);
+  assert.match(onboarding, /HFX_MCP_PROFILE/);
+  assert.match(onboarding, /HFX_MCP_DATA_DIR/);
+  assert.match(onboarding, /Earlier local stores are deliberately not imported/);
+});
+
+test('uses quote-driven fiat recipient instruments', async () => {
   const recipients = await read(
     'skills/agentbank-pay/references/recipients-wallets.md',
   );
 
-  assert.match(recipients, /collect a non-empty `holder_name` from the human/);
-  assert.match(recipients, /Do not infer it from an EMV QR display label/);
-  assert.match(recipients, /Core derives\s+`bank_name`/);
+  assert.match(recipients, /`recipient_requirements`/);
+  assert.match(recipients, /choose exactly one listed\s+`payment_instrument`/);
+  assert.match(recipients, /mobile-money destination is opaque/);
+  assert.match(recipients, /holder_name_must_match_kyc=true/);
 });
 
 test('uses the hosted AgentKit verification handoff', async () => {
@@ -72,7 +89,7 @@ test('uses recipient-free estimates and route-only hops', async () => {
   assert.match(payments, /`next_action\.type=review_estimate`/);
   assert.match(payments, /returned hops contain route data only/);
   assert.match(payments, /recipient once in\s+`destination\.recipient_id`/);
-  assert.match(recipients, /Estimates are recipient-free/);
+  assert.match(recipients, /recipient-free/);
   assert.doesNotMatch(payments, /recipient validation/);
 });
 
@@ -105,9 +122,9 @@ test('documents quote-unavailable and latest recipient recovery', async () => {
   assert.match(payments, /`QUOTE_UNAVAILABLE`/);
   assert.match(payments, /`min_amount`/);
   assert.match(payments, /`fee_ccy`/);
-  assert.match(recipients, /resolvable `bank_name`/);
-  assert.match(recipients, /SeaBank currently\s+canonicalizes to `SEABANK`/);
-  assert.match(recipients, /when returned by `list_recipients`/);
+  assert.match(payments, /reason=recipient_incompatible/);
+  assert.match(payments, /chooses one listed `payment_instrument`/);
+  assert.match(recipients, /`bank_transfer` requires/);
   assert.match(recipients, /default crypto recipient/);
   assert.match(recipients, /human-owner scoped/);
   assert.match(recipients, /chain and address match/);

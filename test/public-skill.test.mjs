@@ -12,7 +12,7 @@ test('generated public skill is self-contained and has immutable provenance', as
   const manifest = {
     source: 'https://github.com/theagentbank/skills',
     skill: 'agentbank-pay',
-    release: 'v1.1.1',
+    release: 'v1.3.0',
     sourceCommit: 'a'.repeat(40),
     sha256: sha256(skill),
   };

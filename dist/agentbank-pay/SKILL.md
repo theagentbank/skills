@@ -5,7 +5,7 @@ license: MIT
 compatibility: Designed for Codex, Claude Code, and Hermes. Installation requires Node.js 22.20+ and internet access.
 metadata:
   author: theagentbank
-  version: "1.1.1"
+  version: "1.3.0"
 ---
 
 <!-- GENERATED from theagentbank/skills. Do not edit this compatibility copy directly. -->
@@ -53,15 +53,11 @@ If an `agentbank` server exists but differs from the documented command, stop
 and show the conflict. After configuration, restart the active client once and
 repeat: `Onboard a new agent`. Do not attempt onboarding before the tools load.
 
-After installing in Hermes, reload the MCP and preserve the original request
-once the tools become available.
-
-For a payment-only request with missing tools, explain the required user-level
-MCP configuration and obtain permission before changing it.
-
-Read the "Setup and onboarding" section below when installing, onboarding,
-checking account readiness, revoking an installation, or resuming after the
-one-time restart.
+Run onboarding only through the configured AgentBank MCP server in the active
+client and profile. Never use a standalone `npx` process or a temporary MCP
+client to bypass missing tools. After browser approval, call `whoami`, restart
+or reload that same client, and call `whoami` again. Report setup complete only
+after the post-restart call succeeds.
 
 ## Safety invariants
 
@@ -89,21 +85,7 @@ one-time restart.
 
 ## Runtime guidance
 
-At the start of an unfamiliar or resumed workflow, call `get_instructions` with
-the relevant journey:
-
-```text
-setup
-pay
-track
-recover
-manage_recipients
-manage_wallets
-```
-
-The MCP resources `agentbank://guides/routing` and
-`agentbank://instructions/{journey}` are also authoritative. Follow newer
-runtime guidance when it does not conflict with the invariants above.
+For setup, pay, track, recover, recipient, or wallet work, call `get_instructions` with the relevant journey. The `agentbank://guides/routing` and `agentbank://instructions/{journey}` resources are also authoritative.
 
 
 ## Detailed workflow references
@@ -117,7 +99,7 @@ As soon as the tools load, call `whoami`.
 If it succeeds, call `get_account_status` and continue with the existing
 installation.
 
-If it returns `MISSING_CREDENTIAL`:
+If it returns a genuine `MISSING_CREDENTIAL`:
 
 1. Call `begin_agent_onboarding` once. It creates or resumes the local
    installation and Privy device flow.
@@ -130,9 +112,24 @@ If it returns `MISSING_CREDENTIAL`:
    `authenticated`.
 5. Call `whoami`, `check_my_scopes`, `get_account_status`, and `list_wallets`.
 
+If `begin_agent_onboarding` returns `status=authorized`, `authenticated=true`, and
+`resumed=true`, an existing installation was restored. There is no browser URL or
+enrollment ID. Verify `whoami`, scopes, account, and wallets, then restart or reload
+the same client and require one more successful `whoami` before saying setup is complete.
+
+For `CREDENTIAL_PROTECTOR_LOCKED`, `CREDENTIAL_PROTECTOR_UNAVAILABLE`, `CREDENTIAL_DEVICE_MISMATCH`, `CREDENTIAL_STORE_UNAVAILABLE`, `CREDENTIAL_STORE_CORRUPT`, `CREDENTIAL_STORE_CONFLICT`, `CREDENTIAL_PROFILE_MISMATCH`, or `SESSION_REFRESH_FAILED`, preserve the installation. Remedy the returned OS storage or connectivity condition and retry in the same client/profile; never start duplicate onboarding, clear credentials, revoke the agent, or ask for secret material.
+
 Browser approval is the only human onboarding step. Never ask for signing
 material, start a second flow while one is pending, or call a legacy
 registration alias.
+
+## Credential persistence
+
+AgentBank uses a deterministic encrypted per-profile vault. Codex, Claude Code/Desktop, and Hermes subprocesses share it; XDG, D-Bus, desktop-session, and client-process variables do not select another store. Roots are under the current user's local data directory on Windows/macOS and `~/.config/agentbank/mcp` on Linux. macOS uses Keychain, Windows current-user DPAPI, and Linux a private local key.
+
+`HFX_MCP_PROFILE` selects a profile; `HFX_MCP_DATA_DIR` optionally sets a managed root. `vault` is default; established `auto` and `keychain` are deterministic-vault aliases. Use `file` only for managed/headless passphrase storage with `HFX_MCP_KEY_STORE_SECRET` and optional `HFX_MCP_KEY_STORE_FILE`.
+
+Earlier local stores are deliberately not imported. A new empty vault requires one onboarding; leave older stores untouched. Never copy a vault, delete a credential store, change the profile, or paste secrets into chat as recovery.
 
 Wallet binding creates the onboarding-bound Privy wallet as the default crypto
 recipient. Older installations may be backfilled when `list_recipients` finds
@@ -273,6 +270,11 @@ and does not create a payment. Read the returned `source_amount`,
 `next_action.type=review_estimate`; `recipient_validation` is no longer part of
 the estimate.
 
+For a fiat destination, also read `recipient_requirements`. They are the
+authoritative instrument choices and field contract. Do not create a recipient
+or payment until the human chooses one listed `payment_instrument` and supplies
+its required fields.
+
 The returned hops contain route data only: `hop_index`, `intent_id`,
 `direction`, `source`, and optional `client_quote_id`. Never add
 `recipient_fields` or `recipient_ref` to these public hops.
@@ -315,6 +317,7 @@ Route: [direct, swap, or source -> intermediate -> destination]
 Estimate expires: [time]
 Expected duration: [when available]
 Material warnings: [only relevant warnings]
+Recipient instrument: [only when the estimate requires one]
 ```
 
 After confirmation, call `create_payment` with a new stable request ID,
@@ -322,6 +325,12 @@ After confirmation, call `create_payment` with a new stable request ID,
 `destination.recipient_id` or `destination.recipient_fields` when required,
 the top-level intermediate asset for two hops, and the exact current estimate
 `hops` unchanged. Do not pass an estimate ID.
+
+If Core returns `status=information_required` with
+`reason=recipient_incompatible`, no payment, settlement, or funds movement
+exists. Return to the current estimate's `recipient_requirements`, correct or
+create the recipient with a listed instrument, and obtain a fresh estimate and
+confirmation if it expired.
 
 For a two-hop route, preserve hop order. The MCP internally injects
 `recipient_ref:{"hop_index":1}` into hop 0 and the top-level destination
@@ -387,26 +396,20 @@ records match. `verified=false` alone does not make a recipient invalid.
 
 ## New recipient data
 
-When the human elects to create a reviewed payment and supplies an image, QR
-payload, pasted bank text, account details, or structured bank data, call
-`create_recipient` before `create_payment`. Estimates are recipient-free. Use
-the returned `recipient_id` or canonical `recipient_fields` only in
-`create_payment.destination`; never manually copy unvalidated fields.
+When the human elects to create a reviewed fiat payment, read that estimate's
+`recipient_requirements`. Ask the human to choose exactly one listed
+`payment_instrument`, then call `create_recipient` with that instrument and its
+required fields before `create_payment`. Never infer an instrument from a QR,
+bank fields, or weak context. Estimates remain recipient-free; use returned
+`recipient_id` or canonical `recipient_fields` only in `create_payment.destination`.
 
-For a curated fiat rail, collect a non-empty `holder_name` from the human in
-addition to the QR, bank details, or payment key. Treat it as an unverified
-payout detail. Do not infer it from an EMV QR display label. Core derives
-`bank_name` from its configured bank-code map when available; otherwise it
-retains a caller-provided bank display name. On a rail with a configured bank
-map, provide either a valid `bank_code` or a resolvable `bank_name`; Core
-canonicalizes known codes and resolves known names.
-
-For the current IDR direct-bank rail, collect `account_number`, `holder_name`,
-and either a valid bank code or resolvable bank name. SeaBank currently
-canonicalizes to `SEABANK`. Existing fiat recipient responses may gain a
-response-only canonical `bank_name` when returned by `list_recipients`; do not
-assume every recipient response is enriched. This enrichment does not mean the
-saved recipient was replaced.
+The quote is authoritative: `qr` requires `country` and `qr_content`;
+`bank_transfer` requires `country`, `bank_code`, `account_number`, and
+`holder_name`; `mobile_money` requires `country`, `mobile_money_network_code`,
+and `mobile_money_destination`. The mobile-money destination is opaque: do not
+force E.164 or request a holder name unless the selected requirement requires it.
+When `holder_name_must_match_kyc=true`, explain that the submitted name must
+equal the user's verified KYC legal name; never request or disclose that name.
 
 For local stdio, an image can use absolute `image.path`; remote clients use
 `image.data_base64`. QR images must contain a readable QR. Pass text-only

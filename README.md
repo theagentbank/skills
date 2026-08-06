@@ -58,6 +58,11 @@ The package owns the deployed AgentBank endpoint defaults. The bootstrap accepts
 the former exact endpoint overrides for upgrade compatibility, but refuses to
 replace any other conflicting MCP server named `agentbank`.
 
+The current package stores credentials in a deterministic local AgentBank vault,
+so supported client subprocesses share the same profile across restarts. Normal
+installs keep an empty environment: do not add endpoint, profile, credential
+store, or secret settings unless an operator explicitly manages that host.
+
 ## What the skill covers
 
 - Agent onboarding, readiness, scopes, logout, and per-installation approval

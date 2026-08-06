@@ -1,9 +1,16 @@
 #!/usr/bin/env node
 
-import { spawn } from 'node:child_process';
+import { execFileSync, spawn } from 'node:child_process';
 import readline from 'node:readline';
 
-const child = spawn('npx', ['-y', 'agent-bank-mcp@latest'], {
+const packageSpec = process.env.AGENTBANK_MCP_PACKAGE ?? 'agent-bank-mcp@latest';
+const expectedVersion = process.env.AGENTBANK_MCP_EXPECTED_VERSION ??
+  (process.env.AGENTBANK_MCP_PACKAGE
+    ? null
+    : execFileSync('npm', ['view', 'agent-bank-mcp@latest', 'version'], {
+      encoding: 'utf8',
+    }).trim());
+const child = spawn('npx', ['-y', packageSpec], {
   env: process.env,
   shell: false,
   stdio: ['pipe', 'pipe', 'pipe'],
@@ -74,6 +81,14 @@ readline.createInterface({ input: child.stdout }).on('line', (line) => {
       return;
     }
     serverVersion = message.result.serverInfo.version ?? 'unknown';
+    if (expectedVersion && serverVersion !== expectedVersion) {
+      finish(
+        new Error(
+          `MCP initialize version ${serverVersion} does not match npm latest ${expectedVersion}`,
+        ),
+      );
+      return;
+    }
     initialized = true;
     send({ jsonrpc: '2.0', method: 'notifications/initialized' });
     send({ jsonrpc: '2.0', id: 2, method: 'tools/list', params: {} });

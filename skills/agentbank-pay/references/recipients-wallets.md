@@ -8,26 +8,20 @@ records match. `verified=false` alone does not make a recipient invalid.
 
 ## New recipient data
 
-When the human elects to create a reviewed payment and supplies an image, QR
-payload, pasted bank text, account details, or structured bank data, call
-`create_recipient` before `create_payment`. Estimates are recipient-free. Use
-the returned `recipient_id` or canonical `recipient_fields` only in
-`create_payment.destination`; never manually copy unvalidated fields.
+When the human elects to create a reviewed fiat payment, read that estimate's
+`recipient_requirements`. Ask the human to choose exactly one listed
+`payment_instrument`, then call `create_recipient` with that instrument and its
+required fields before `create_payment`. Never infer an instrument from a QR,
+bank fields, or weak context. Estimates remain recipient-free; use returned
+`recipient_id` or canonical `recipient_fields` only in `create_payment.destination`.
 
-For a curated fiat rail, collect a non-empty `holder_name` from the human in
-addition to the QR, bank details, or payment key. Treat it as an unverified
-payout detail. Do not infer it from an EMV QR display label. Core derives
-`bank_name` from its configured bank-code map when available; otherwise it
-retains a caller-provided bank display name. On a rail with a configured bank
-map, provide either a valid `bank_code` or a resolvable `bank_name`; Core
-canonicalizes known codes and resolves known names.
-
-For the current IDR direct-bank rail, collect `account_number`, `holder_name`,
-and either a valid bank code or resolvable bank name. SeaBank currently
-canonicalizes to `SEABANK`. Existing fiat recipient responses may gain a
-response-only canonical `bank_name` when returned by `list_recipients`; do not
-assume every recipient response is enriched. This enrichment does not mean the
-saved recipient was replaced.
+The quote is authoritative: `qr` requires `country` and `qr_content`;
+`bank_transfer` requires `country`, `bank_code`, `account_number`, and
+`holder_name`; `mobile_money` requires `country`, `mobile_money_network_code`,
+and `mobile_money_destination`. The mobile-money destination is opaque: do not
+force E.164 or request a holder name unless the selected requirement requires it.
+When `holder_name_must_match_kyc=true`, explain that the submitted name must
+equal the user's verified KYC legal name; never request or disclose that name.
 
 For local stdio, an image can use absolute `image.path`; remote clients use
 `image.data_base64`. QR images must contain a readable QR. Pass text-only

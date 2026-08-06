@@ -5,7 +5,7 @@ license: MIT
 compatibility: Designed for Codex, Claude Code, and Hermes. Installation requires Node.js 22.20+ and internet access.
 metadata:
   author: theagentbank
-  version: "1.1.1"
+  version: "1.3.0"
 ---
 
 # AgentBank Pay
@@ -33,7 +33,7 @@ onboard AgentBank, run this skill's bootstrap:
 node "<skill-directory>/scripts/setup-mcp.mjs" --client codex --json
 ```
 
-Use `--client claude` in Claude Code. In Hermes, run:
+Use `--client claude` in Claude Code or Claude Desktop. In Hermes, run:
 
 ```bash
 hermes mcp add agentbank --command npx --args -y agent-bank-mcp@latest
@@ -55,6 +55,16 @@ tell the user to restart the active coding agent once and repeat:
 
 After installing in Hermes, reload the MCP and preserve the original request
 once the tools become available.
+
+Run onboarding only through the configured AgentBank MCP server in the active
+client and profile. Never use `hermes mcp test`, a standalone `npx` process, a
+temporary Node/Python MCP client, or another client/profile to bypass missing
+tools. A temporary process cannot prove the configured client can restore its
+local installation.
+
+After browser approval, call `whoami` on that same MCP connection, reload or
+restart the active client once, then call `whoami` again. Report setup complete
+only after the post-restart call succeeds.
 
 For a payment-only request with missing tools, explain the required user-level
 MCP configuration and obtain permission before changing it.

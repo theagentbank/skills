@@ -62,6 +62,11 @@ and does not create a payment. Read the returned `source_amount`,
 `next_action.type=review_estimate`; `recipient_validation` is no longer part of
 the estimate.
 
+For a fiat destination, also read `recipient_requirements`. They are the
+authoritative instrument choices and field contract. Do not create a recipient
+or payment until the human chooses one listed `payment_instrument` and supplies
+its required fields.
+
 The returned hops contain route data only: `hop_index`, `intent_id`,
 `direction`, `source`, and optional `client_quote_id`. Never add
 `recipient_fields` or `recipient_ref` to these public hops.
@@ -104,6 +109,7 @@ Route: [direct, swap, or source -> intermediate -> destination]
 Estimate expires: [time]
 Expected duration: [when available]
 Material warnings: [only relevant warnings]
+Recipient instrument: [only when the estimate requires one]
 ```
 
 After confirmation, call `create_payment` with a new stable request ID,
@@ -111,6 +117,12 @@ After confirmation, call `create_payment` with a new stable request ID,
 `destination.recipient_id` or `destination.recipient_fields` when required,
 the top-level intermediate asset for two hops, and the exact current estimate
 `hops` unchanged. Do not pass an estimate ID.
+
+If Core returns `status=information_required` with
+`reason=recipient_incompatible`, no payment, settlement, or funds movement
+exists. Return to the current estimate's `recipient_requirements`, correct or
+create the recipient with a listed instrument, and obtain a fresh estimate and
+confirmation if it expired.
 
 For a two-hop route, preserve hop order. The MCP internally injects
 `recipient_ref:{"hop_index":1}` into hop 0 and the top-level destination

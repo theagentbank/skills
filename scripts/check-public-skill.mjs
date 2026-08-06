@@ -24,6 +24,9 @@ export function validatePublicSkill(skill, manifest) {
     'codex mcp get agentbank --json',
     'codex mcp add agentbank -- npx -y agent-bank-mcp@latest',
     'claude mcp add --scope user agentbank -- npx -y agent-bank-mcp@latest',
+    'recipient_requirements',
+    'After browser approval, call `whoami`, restart',
+    'CREDENTIAL_STORE_CORRUPT',
     '## Detailed workflow references',
   ]) {
     if (!skill.includes(snippet)) errors.push(`SKILL.md is missing: ${snippet}`);

@@ -33,9 +33,19 @@ npm run smoke:mcp
 ```
 
 `smoke:install` performs clean copied installations for Codex and Claude Code.
-`smoke:mcp` initializes `agent-bank-mcp@latest` and checks the production tool
+`smoke:mcp` initializes `agent-bank-mcp@latest`, resolves npm's current latest
+version, and checks that MCP initialize reports that same version and production tool
 catalog and critical input-schema boundaries. It never starts onboarding or
 moves funds.
+
+For a pre-publish release candidate, point the same check at its packed tarball:
+
+```bash
+AGENTBANK_MCP_PACKAGE=../protocol-core/mcp-agent-server/agent-bank-mcp-candidate.tgz AGENTBANK_MCP_EXPECTED_VERSION=0.1.19 npm run smoke:mcp
+```
+
+The default command intentionally uses npm and fails if its published artifact
+does not report the expected MCP version.
 
 ## Editing the skill
 

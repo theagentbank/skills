@@ -1,8 +1,8 @@
 {
   "source_repository": "theagentbank/protocol-core",
   "source_branch": "development/1.0.0",
-  "source_commit": "3d85e7814f78ce575027328d3e75efc822756f47",
-  "source_committed_at": "2026-08-04T13:19:50+07:00",
-  "audit_baseline_commit": "b32430208d9d4c156af6b032a8f5fbb7e427e53e",
-  "previous_skills_sync_commit": "190b9852065cdb230ad75b3e7962e861f6bbf957"
+  "source_commit": "e85e469bddc4753e441ef4bb6314a4b802886434",
+  "source_committed_at": "2026-08-06T22:30:32+07:00",
+  "audit_baseline_commit": "c43410e",
+  "previous_skills_sync_commit": "923a34670fc64cf1174da970caa0cd2fe708bf72"
 }

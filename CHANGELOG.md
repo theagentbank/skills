@@ -4,6 +4,26 @@ All notable user-visible changes are recorded here.
 
 This project follows [Semantic Versioning](https://semver.org/).
 
+## [1.3.0] - 2026-08-06
+
+### Changed
+
+- Added quote-driven fiat recipient instruments and field requirements from the
+  merged AgentBank MCP 0.1.19 contract.
+- Updated the latest-package installation and release gate for the 0.1.19
+  contract.
+
+## [1.2.0] - 2026-08-06
+
+### Changed
+
+- Updated setup and smoke verification to the audited `agent-bank-mcp@0.1.17`
+  credential-vault release.
+- Added same-client post-restart onboarding verification and recovery guidance
+  that prevents duplicate installations when local credential storage fails.
+- Published the deterministic per-profile vault and managed-storage guidance in
+  the canonical and single-file compatibility skill.
+
 ## [1.1.1] - 2026-08-06
 
 ### Changed

@@ -36,7 +36,13 @@ then \`/reload-mcp\`.
 
 If an \`agentbank\` server exists but differs from the documented command, stop
 and show the conflict. After configuration, restart the active client once and
-repeat: \`Onboard a new agent\`. Do not attempt onboarding before the tools load.`;
+repeat: \`Onboard a new agent\`. Do not attempt onboarding before the tools load.
+
+Run onboarding only through the configured AgentBank MCP server in the active
+client and profile. Never use a standalone \`npx\` process or a temporary MCP
+client to bypass missing tools. After browser approval, call \`whoami\`, restart
+or reload that same client, and call \`whoami\` again. Report setup complete only
+after the post-restart call succeeds.`;
 
 function renderPortableBody(body) {
   const bootstrap = /If the tools are absent in Codex[\s\S]*?Do not attempt onboarding before the tools load\./;
@@ -48,6 +54,18 @@ function renderPortableBody(body) {
     .replace(
       'Read [onboarding.md](references/onboarding.md) when installing, onboarding,\nchecking account readiness, revoking an installation, or resuming after the\none-time restart.',
       'Read the \"Setup and onboarding\" section below when installing, onboarding,\nchecking account readiness, revoking an installation, or resuming after the\none-time restart.',
+    )
+    .replace(
+      /\nRun onboarding only through the configured AgentBank MCP server in the active\nclient and profile\. Never use `hermes mcp test`, a standalone `npx` process, a\ntemporary Node\/Python MCP client, or another client\/profile to bypass missing\ntools\. A temporary process cannot prove the configured client can restore its\nlocal installation\.\n\nAfter browser approval, call `whoami` on that same MCP connection, reload or\nrestart the active client once, then call `whoami` again\. Report setup complete\nonly after the post-restart call succeeds\.\n/,
+      '',
+    )
+    .replace(
+      /\nAfter installing in Hermes, reload the MCP and preserve the original request\nonce the tools become available\.\n\nFor a payment-only request with missing tools, explain the required user-level\nMCP configuration and obtain permission before changing it\.\n\nRead the "Setup and onboarding" section below when installing, onboarding,\nchecking account readiness, revoking an installation, or resuming after the\none-time restart\.\n/,
+      '',
+    )
+    .replace(
+      /\n## Runtime guidance\n\nAt the start of an unfamiliar or resumed workflow, call `get_instructions` with\nthe relevant journey:\n\n```text\nsetup\npay\ntrack\nrecover\nmanage_recipients\nmanage_wallets\n```\n\nThe MCP resources `agentbank:\/\/guides\/routing` and\n`agentbank:\/\/instructions\/\{journey\}` are also authoritative\. Follow newer\nruntime guidance when it does not conflict with the invariants above\.\n/,
+      '\n## Runtime guidance\n\nFor setup, pay, track, recover, recipient, or wallet work, call `get_instructions` with the relevant journey. The `agentbank://guides/routing` and `agentbank://instructions/{journey}` resources are also authoritative.\n',
     )
     .replace(/\n## Route by task[\s\S]*$/, '');
 }
