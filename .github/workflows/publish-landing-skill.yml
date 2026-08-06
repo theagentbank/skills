@@ -1,0 +1,84 @@
+name: Publish landing-page skill
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: publish-landing-skill
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    name: Open landing-page skill sync PR
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: landing-skill-publish
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.20.0
+          cache: npm
+
+      - run: npm ci
+      - run: npm run check
+      - run: npm run export:legacy
+
+      - name: Create a landing-page-scoped GitHub App token
+        id: app-token
+        uses: actions/create-github-app-token@v3
+        with:
+          app-id: ${{ vars.AGENTBANK_LANDING_SYNC_APP_ID }}
+          private-key: ${{ secrets.AGENTBANK_LANDING_SYNC_PRIVATE_KEY }}
+          owner: HumanFX
+          repositories: HumanFX-landingpage
+          permission-contents: write
+          permission-pull-requests: write
+
+      - name: Check out the landing page with the App token
+        uses: actions/checkout@v4
+        with:
+          repository: HumanFX/HumanFX-landingpage
+          token: ${{ steps.app-token.outputs.token }}
+          path: .landing-page
+
+      - name: Render the generated landing-page files
+        run: >-
+          npm run sync:landing-page --
+          --target "$GITHUB_WORKSPACE/.landing-page"
+
+      - name: Create or update the review pull request
+        working-directory: ${{ github.workspace }}/.landing-page
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          SKILL_VERSION: ${{ github.ref_name }}
+        run: |
+          branch="automation/sync-agentbank-skill-${SKILL_VERSION}"
+          git config user.name "agentbank-skill-sync[bot]"
+          git config user.email "agentbank-skill-sync[bot]@users.noreply.github.com"
+          git checkout -B "$branch"
+
+          if git diff --quiet -- public/SKILL.md public/agentbank-pay.manifest.json; then
+            echo "Landing-page skill is already current."
+            exit 0
+          fi
+
+          git add public/SKILL.md public/agentbank-pay.manifest.json
+          git commit -m "chore: sync AgentBank skill ${SKILL_VERSION}"
+          git push --force-with-lease origin "$branch"
+
+          if ! gh pr view "$branch" --repo HumanFX/HumanFX-landingpage >/dev/null 2>&1; then
+            gh pr create \
+              --repo HumanFX/HumanFX-landingpage \
+              --base main \
+              --head "$branch" \
+              --title "chore: sync AgentBank skill ${SKILL_VERSION}" \
+              --body $'Generated from `theagentbank/skills` after validation.\n\nReview the generated `public/SKILL.md` and provenance manifest before merging.'
+          fi

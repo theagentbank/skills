@@ -31,6 +31,7 @@
     "smoke:install": "node scripts/smoke-install.mjs",
     "smoke:mcp": "node scripts/smoke-mcp.mjs",
     "export:legacy": "node scripts/export-legacy-skill.mjs",
+    "sync:landing-page": "node scripts/sync-landing-skill.mjs",
     "sync:protocol-core": "node scripts/sync-protocol-core.mjs"
   },
   "devDependencies": {
