@@ -5,7 +5,7 @@ license: MIT
 compatibility: Designed for Codex, Claude Code, and Hermes. Installation requires Node.js 22.20+ and internet access.
 metadata:
   author: theagentbank
-  version: "1.1.0"
+  version: "1.1.1"
 ---
 
 # AgentBank Pay

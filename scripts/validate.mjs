@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 
 import { access, readFile, readdir, stat } from 'node:fs/promises';
+import { execFile } from 'node:child_process';
+import { promisify } from 'node:util';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseDocument } from 'yaml';
@@ -11,6 +13,7 @@ import {
 } from './legacy.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const execFileAsync = promisify(execFile);
 const skillRoot = path.join(root, 'skills', 'agentbank-pay');
 const errors = [];
 const required = [
@@ -25,6 +28,7 @@ const required = [
   'skills/agentbank-pay/agents/openai.yaml',
   'skills/agentbank-pay/scripts/setup-mcp.mjs',
   'scripts/check-protocol-drift.mjs',
+  'scripts/check-public-skill.mjs',
   'scripts/smoke-install.mjs',
   'scripts/smoke-mcp.mjs',
   ...REFERENCE_FILES.map((file) => `skills/agentbank-pay/references/${file}`),
@@ -87,8 +91,13 @@ async function validateLinks(relative, text) {
 for (const relative of required) {
   if (!(await exists(path.join(root, relative)))) errors.push(`Missing ${relative}`);
 }
+const trackedFiles = new Set(
+  (await execFileAsync('git', ['ls-files'], { cwd: root })).stdout
+    .split(/\r?\n/)
+    .filter(Boolean),
+);
 for (const relative of forbiddenPublisherFiles) {
-  if (await exists(path.join(root, relative))) {
+  if (trackedFiles.has(relative)) {
     errors.push(`Local client artifact must not be published: ${relative}`);
   }
 }
@@ -207,7 +216,7 @@ for (const relative of allFiles) {
       errors.push(`${relative}: invalid JSON (${error.message})`);
     }
   }
-  await validateLinks(relative, content);
+  if (extension === '.md') await validateLinks(relative, content);
   for (const pattern of secretPatterns) {
     if (pattern.test(content)) errors.push(`Potential secret in ${relative}`);
   }
@@ -216,6 +225,7 @@ for (const relative of allFiles) {
 if (process.platform !== 'win32') {
   for (const relative of [
     'scripts/check-protocol-drift.mjs',
+    'scripts/check-public-skill.mjs',
     'scripts/export-legacy-skill.mjs',
     'scripts/smoke-install.mjs',
     'scripts/smoke-mcp.mjs',
@@ -243,7 +253,14 @@ try {
 }
 if (trackedLegacy !== null) {
   try {
-    if (normalizeLineEndings(trackedLegacy) !== (await renderLegacy(root))) {
+    const renderedLegacy = await renderLegacy(root);
+    if (renderedLegacy.split(/\r?\n/).length > 500) {
+      errors.push('Public compatibility artifact exceeds the 500-line recommendation');
+    }
+    if (renderedLegacy.includes('<skill-directory>') || /\]\(references\//.test(renderedLegacy)) {
+      errors.push('Public compatibility artifact contains unavailable local dependencies');
+    }
+    if (normalizeLineEndings(trackedLegacy) !== renderedLegacy) {
       errors.push('Legacy artifact drifted; run npm run export:legacy');
     }
   } catch (error) {

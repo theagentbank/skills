@@ -20,6 +20,11 @@ const packageJson = JSON.parse(
 );
 const skill = await readFile(source);
 const sourceCommit = process.env.GITHUB_SHA;
+const release =
+  process.env.SKILL_RELEASE ??
+  (process.env.GITHUB_REF_TYPE === 'tag'
+    ? process.env.GITHUB_REF_NAME
+    : `v${packageJson.version}`);
 
 if (!sourceCommit) {
   throw new Error('GITHUB_SHA is required to record the source revision.');
@@ -31,7 +36,7 @@ await cp(source, destination);
 const manifest = {
   source: 'https://github.com/theagentbank/skills',
   skill: 'agentbank-pay',
-  release: process.env.GITHUB_REF_NAME ?? packageJson.version,
+  release,
   sourceCommit,
   sha256: createHash('sha256').update(skill).digest('hex'),
 };

@@ -15,7 +15,11 @@ test('legacy export is deterministic and self-contained', async () => {
   assert.match(first, /GENERATED from theagentbank\/skills/);
   assert.match(first, /# Setup and onboarding/);
   assert.match(first, /# Payments and tracking/);
+  assert.match(first, /codex mcp get agentbank --json/);
+  assert.match(first, /codex mcp add agentbank -- npx -y agent-bank-mcp@latest/);
+  assert.doesNotMatch(first, /<skill-directory>/);
   assert.doesNotMatch(first, /\]\(references\//);
+  assert.ok(first.split(/\r?\n/).length <= 500);
 });
 
 test('tracked legacy artifact matches canonical sources', async () => {

@@ -5,7 +5,7 @@ license: MIT
 compatibility: Designed for Codex, Claude Code, and Hermes. Installation requires Node.js 22.20+ and internet access.
 metadata:
   author: theagentbank
-  version: "1.1.0"
+  version: "1.1.1"
 ---
 
 <!-- GENERATED from theagentbank/skills. Do not edit this compatibility copy directly. -->
@@ -28,32 +28,30 @@ original task.
 The published MCP package owns the deployed AgentBank endpoint defaults. Do not
 add endpoint environment overrides to a normal installation.
 
-If the tools are absent in Codex and the user explicitly asked to set up or
-onboard AgentBank, run this skill's bootstrap:
+If the tools are absent and the user explicitly asked to set up or onboard
+AgentBank, configure only the active client. Inspect first and never overwrite
+an existing conflicting server.
+
+For Codex:
 
 ```bash
-node "<skill-directory>/scripts/setup-mcp.mjs" --client codex --json
+codex mcp get agentbank --json
 ```
 
-Use `--client claude` in Claude Code. In Hermes, run:
+Only when that reports the server is missing:
 
 ```bash
-hermes mcp add agentbank --command npx --args -y agent-bank-mcp@latest
+codex mcp add agentbank -- npx -y agent-bank-mcp@latest
 ```
 
-Then run `/reload-mcp`. If the active client cannot be determined, ask which
-client the user is using. Do not configure more than one client.
+For Claude Code, use `claude mcp get agentbank`, then add a missing server with
+`claude mcp add --scope user agentbank -- npx -y agent-bank-mcp@latest`.
+For Hermes, run `hermes mcp add agentbank --command npx --args -y agent-bank-mcp@latest`,
+then `/reload-mcp`.
 
-Interpret the result as follows:
-
-- `configured`: configuration was added and verified.
-- `already_configured`: the exact configuration already exists.
-- `conflict`: stop and show the conflict; never remove or overwrite it.
-- `client_unavailable`: explain that the selected client CLI is unavailable.
-
-After `configured` or `already_configured`, if the MCP tools are still absent,
-tell the user to restart the active coding agent once and repeat:
-`Onboard a new agent`. Do not attempt onboarding before the tools load.
+If an `agentbank` server exists but differs from the documented command, stop
+and show the conflict. After configuration, restart the active client once and
+repeat: `Onboard a new agent`. Do not attempt onboarding before the tools load.
 
 After installing in Hermes, reload the MCP and preserve the original request
 once the tools become available.
@@ -61,7 +59,7 @@ once the tools become available.
 For a payment-only request with missing tools, explain the required user-level
 MCP configuration and obtain permission before changing it.
 
-Read onboarding.md when installing, onboarding,
+Read the "Setup and onboarding" section below when installing, onboarding,
 checking account readiness, revoking an installation, or resuming after the
 one-time restart.
 
@@ -107,60 +105,10 @@ The MCP resources `agentbank://guides/routing` and
 `agentbank://instructions/{journey}` are also authoritative. Follow newer
 runtime guidance when it does not conflict with the invariants above.
 
-## Route by task
-
-- Setup, onboarding, readiness, or logout:
-  onboarding.md
-- KYC, badges, World ID, or AgentKit verification:
-  identity.md
-- Creating, approving, funding, executing, or tracking a payment:
-  payments.md
-- Saved recipients, QR/bank data, wallet lookup, balances, or allowances:
-  recipients-wallets.md
-- Failed, stuck, cancelled, reviewed, or recipient-correction states:
-  recovery.md
-
-Load only the references needed for the current task.
-
-## Tool groups
-
-```text
-Setup/security: whoami, begin_agent_onboarding, wait_for_agent_onboarding, get_installation_status, get_account_status, check_my_scopes, get_payment_approval_policy, update_payment_approval_policy, revoke_agent
-Identity: check_verification_status, do_kyc, get_verification_guidance, verify_agent_kit
-Discovery: list_currencies, get_supported_payment_capabilities, list_quote_book_pairs, browse_quote_book, get_ramp_quote, estimate_payment
-Payments: create_payment, continue_payment, execute_payment_instruction, get_payment, list_payments, cancel_payment, correct_payment_recipient
-Recipients: list_recipients, get_recipient, create_recipient, update_recipient
-Wallets: list_wallets, get_wallet_balances, get_token_allowance, approve_token, get_transaction_receipt
-Guidance: get_instructions
-```
 
 ## Detailed workflow references
 
 # Setup and onboarding
-
-## Configure the MCP
-
-The bootstrap expects this exact stdio server:
-
-```text
-name: agentbank
-command: npx
-args: -y agent-bank-mcp@latest
-environment: empty
-```
-
-The published package supplies the deployed AgentBank endpoint defaults. New
-installations must not add endpoint overrides.
-
-The bootstrap performs a no-op for an exact match, adds a missing
-configuration, and refuses to overwrite a conflict. For upgrade compatibility,
-it also accepts an otherwise exact configuration containing only the former
-`PROTOCOL_BASE_URL=https://protocol.agentbank.world` and
-`APP_BASE_URL=https://app.agentbank.world` overrides. Run it only through
-the availability gate in the main skill.
-
-Hermes uses the manual command in the main skill and `/reload-mcp`; the
-bootstrap script supports Codex and Claude Code only.
 
 ## Onboard
 

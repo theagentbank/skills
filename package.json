@@ -1,6 +1,6 @@
 {
   "name": "@theagentbank/skills",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "private": true,
   "type": "module",
   "description": "Installable AgentBank skills for coding agents",
@@ -30,6 +30,7 @@
     "check:protocol-drift": "node scripts/check-protocol-drift.mjs",
     "smoke:install": "node scripts/smoke-install.mjs",
     "smoke:mcp": "node scripts/smoke-mcp.mjs",
+    "check:public-skill": "node scripts/check-public-skill.mjs",
     "export:legacy": "node scripts/export-legacy-skill.mjs",
     "sync:landing-page": "node scripts/sync-landing-skill.mjs",
     "sync:protocol-core": "node scripts/sync-protocol-core.mjs"

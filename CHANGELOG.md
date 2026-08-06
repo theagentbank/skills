@@ -4,6 +4,18 @@ All notable user-visible changes are recorded here.
 
 This project follows [Semantic Versioning](https://semver.org/).
 
+## [1.1.1] - 2026-08-06
+
+### Changed
+
+- Made the public single-file skill self-contained: it now uses inspect-first
+  Codex and Claude Code setup commands rather than referring to an unavailable
+  local bootstrap script.
+- Removed duplicated setup content from the compatibility artifact and kept it
+  within the Agent Skills progressive-disclosure size recommendation.
+- Recorded public-skill releases as immutable version labels instead of a
+  mutable branch name when the landing sync runs manually.
+
 ## [1.1.0] - 2026-08-04
 
 ### Added
