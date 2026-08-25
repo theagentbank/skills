@@ -72,6 +72,7 @@ store, or secret settings unless an operator explicitly manages that host.
 - Fiat and crypto recipient canonicalization
 - Shared Privy wallet balances and server-owned instruction execution
 - Direct and explicit two-hop payments
+- Multi-payment plans with one reviewed approval
 - Durable tracking, cancellation, correction, and safe recovery
 
 The main [`SKILL.md`](skills/agentbank-pay/SKILL.md) stays compact and loads

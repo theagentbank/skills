@@ -4,6 +4,23 @@ All notable user-visible changes are recorded here.
 
 This project follows [Semantic Versioning](https://semver.org/).
 
+## [1.4.0] - 2026-08-24
+
+### Added
+
+- Added the five-tool payment-plan workflow for grouping multiple independent
+  payments under one reviewed World ID approval.
+- Added terminal pre-funding expiry recovery and richer timeline guidance.
+
+### Changed
+
+- Updated the release contract to `agent-bank-mcp@0.1.25` and its exact
+  43-tool production catalog.
+- Replaced public fiat `bank_code` input guidance with quote-driven
+  `payment_instrument` and human-confirmed `bank_name` handling.
+- Updated onboarding recovery, Linux vault security, on-ramp-first World ID
+  behavior, approval cancellation, and owner-scoped sibling recovery.
+
 ## [1.3.0] - 2026-08-06
 
 ### Changed

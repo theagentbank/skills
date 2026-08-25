@@ -29,6 +29,7 @@ jobs:
 
       - run: npm ci
       - run: npm run check
+      - run: npm run smoke:mcp
       - run: npm run export:legacy
 
       - name: Read the release label

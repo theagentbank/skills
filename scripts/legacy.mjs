@@ -44,12 +44,54 @@ client to bypass missing tools. After browser approval, call \`whoami\`, restart
 or reload that same client, and call \`whoami\` again. Report setup complete only
 after the post-restart call succeeds.`;
 
+function compactPortableMarkdown(markdown) {
+  const output = [];
+  let joinAt = null;
+  let fenced = false;
+
+  for (const line of markdown.split('\n')) {
+    if (/^```/.test(line)) {
+      output.push(line);
+      fenced = !fenced;
+      joinAt = null;
+      continue;
+    }
+    if (fenced) {
+      output.push(line);
+      continue;
+    }
+    if (!line.trim()) {
+      output.push('');
+      joinAt = null;
+      continue;
+    }
+    if (/^#{1,6}\s/.test(line)) {
+      output.push(line);
+      joinAt = null;
+      continue;
+    }
+    if (/^\s*(?:[-*+] |\d+\. |>|\|)/.test(line)) {
+      output.push(line.trimEnd());
+      joinAt = output.length - 1;
+      continue;
+    }
+    if (joinAt !== null) {
+      output[joinAt] += ` ${line.trim()}`;
+    } else {
+      output.push(line.trimEnd());
+      joinAt = output.length - 1;
+    }
+  }
+
+  return output.join('\n');
+}
+
 function renderPortableBody(body) {
   const bootstrap = /If the tools are absent in Codex[\s\S]*?Do not attempt onboarding before the tools load\./;
   if (!bootstrap.test(body)) {
     throw new Error('SKILL.md is missing the canonical MCP bootstrap section');
   }
-  return body
+  return compactPortableMarkdown(body
     .replace(bootstrap, PORTABLE_BOOTSTRAP)
     .replace(
       'Read [onboarding.md](references/onboarding.md) when installing, onboarding,\nchecking account readiness, revoking an installation, or resuming after the\none-time restart.',
@@ -67,14 +109,14 @@ function renderPortableBody(body) {
       /\n## Runtime guidance\n\nAt the start of an unfamiliar or resumed workflow, call `get_instructions` with\nthe relevant journey:\n\n```text\nsetup\npay\ntrack\nrecover\nmanage_recipients\nmanage_wallets\n```\n\nThe MCP resources `agentbank:\/\/guides\/routing` and\n`agentbank:\/\/instructions\/\{journey\}` are also authoritative\. Follow newer\nruntime guidance when it does not conflict with the invariants above\.\n/,
       '\n## Runtime guidance\n\nFor setup, pay, track, recover, recipient, or wallet work, call `get_instructions` with the relevant journey. The `agentbank://guides/routing` and `agentbank://instructions/{journey}` resources are also authoritative.\n',
     )
-    .replace(/\n## Route by task[\s\S]*$/, '');
+    .replace(/\n## Route by task[\s\S]*$/, ''));
 }
 
 function renderPortableReference(filename, content) {
-  if (filename !== 'onboarding.md') return content.trim();
-  return content
+  if (filename !== 'onboarding.md') return compactPortableMarkdown(content.trim());
+  return compactPortableMarkdown(content
     .replace(/^## Configure the MCP[\s\S]*?(?=^## Onboard)/m, '')
-    .trim();
+    .trim());
 }
 
 export async function renderLegacy(repoRoot) {

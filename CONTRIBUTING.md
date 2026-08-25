@@ -41,11 +41,13 @@ moves funds.
 For a pre-publish release candidate, point the same check at its packed tarball:
 
 ```bash
-AGENTBANK_MCP_PACKAGE=../protocol-core/mcp-agent-server/agent-bank-mcp-candidate.tgz AGENTBANK_MCP_EXPECTED_VERSION=0.1.19 npm run smoke:mcp
+AGENTBANK_MCP_PACKAGE=../protocol-core/mcp-agent-server/agent-bank-mcp-candidate.tgz AGENTBANK_MCP_EXPECTED_VERSION=0.1.25 npm run smoke:mcp
 ```
 
-The default command intentionally uses npm and fails if its published artifact
-does not report the expected MCP version.
+The default command intentionally resolves `agent-bank-mcp@latest` from npm and
+fails when its initialize version, exact production catalog, or critical schemas
+drift from the recorded release contract. A future candidate must use a new npm
+version; never reuse an already-published version for changed source.
 
 ## Editing the skill
 

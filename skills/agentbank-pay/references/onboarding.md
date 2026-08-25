@@ -31,6 +31,12 @@ As soon as the tools load, call `whoami`.
 If it succeeds, call `get_account_status` and continue with the existing
 installation.
 
+If it returns `UNAUTHENTICATED` because the saved session expired, call
+`relogin` once and retry the original authenticated tool. `relogin` refreshes
+only the active local installation and never accepts or returns a credential,
+key, challenge, or signature. Do not begin new onboarding for an expired
+session.
+
 If it returns a genuine `MISSING_CREDENTIAL`:
 
 1. Call `begin_agent_onboarding` once. It creates or resumes the local
@@ -40,8 +46,7 @@ If it returns a genuine `MISSING_CREDENTIAL`:
 3. Immediately call `wait_for_agent_onboarding` with the returned
    `enrollment_id`. If it times out while pending, call it again with the same
    enrollment ID.
-4. Verify `humanfx_claimed`, `privy_authorized`, `wallet_bound`, and
-   `authenticated`.
+4. Verify `privy_authorized`, `wallet_bound`, and `authenticated`.
 5. Call `whoami`, `check_my_scopes`, `get_account_status`, and `list_wallets`.
 
 If `begin_agent_onboarding` returns `status=authorized`, `authenticated=true`, and
@@ -55,13 +60,24 @@ Browser approval is the only human onboarding step. Never ask for signing
 material, start a second flow while one is pending, or call a legacy
 registration alias.
 
+Denied, expired, cancelled, or revoked onboarding clears only the unfinished
+flow. A malformed or expired pending record is repaired without replacing an
+active installation. If authorization completed with the wallet bound,
+`begin_agent_onboarding` may restore the session and return
+`authenticated=true` and `resumed=true`; verify the same-client restart before
+reporting success.
+
 ## Credential persistence
 
-AgentBank uses a deterministic encrypted per-profile vault. Codex, Claude Code/Desktop, and Hermes subprocesses share it; XDG, D-Bus, desktop-session, and client-process variables do not select another store. Roots are under the current user's local data directory on Windows/macOS and `~/.config/agentbank/mcp` on Linux. macOS uses Keychain, Windows current-user DPAPI, and Linux a private local key.
+AgentBank uses a deterministic encrypted per-profile vault. Codex, Claude Code/Desktop, and Hermes subprocesses share it; XDG, D-Bus, desktop-session, and client-process variables do not select another store. Roots are under the current user's local data directory on Windows/macOS and `~/.config/agentbank/mcp` on Linux. macOS uses Keychain, Windows current-user DPAPI, and Linux a private local key with `0700` directories and `0600` files.
 
 `HFX_MCP_PROFILE` selects a profile; `HFX_MCP_DATA_DIR` optionally sets a managed root. `vault` is default; established `auto` and `keychain` are deterministic-vault aliases. Use `file` only for managed/headless passphrase storage with `HFX_MCP_KEY_STORE_SECRET` and optional `HFX_MCP_KEY_STORE_FILE`.
 
-Earlier local stores are deliberately not imported. A new empty vault requires one onboarding; leave older stores untouched. Never copy a vault, delete a credential store, change the profile, or paste secrets into chat as recovery.
+Do not claim that an earlier store will or will not be migrated unless the MCP
+returns that result. Never delete a credential store, change the profile, or
+paste secrets into chat as recovery. On Linux, copying the complete MCP data
+directory also copies its local vault key, so rely on disk encryption and
+protected backups when home-directory theft is in scope.
 
 Wallet binding creates the onboarding-bound Privy wallet as the default crypto
 recipient. Older installations may be backfilled when `list_recipients` finds
@@ -80,15 +96,16 @@ policies.
 `update_payment_approval_policy` changes a security policy. Before calling it:
 
 1. Show the current policy and proposed threshold.
-2. Explain that World ID is required when locked USD-stable volume is greater
-   than that threshold, while non-USD-stable routes always require World ID.
+2. Explain that the threshold applies only where the payment rules make it
+   applicable; on-ramp-first payments currently bypass World ID.
 3. Obtain explicit human confirmation.
 4. Pass `world_id_approval_threshold_usd` as a non-negative decimal string.
 
 The value supports at most 18 fractional digits and must not use a negative,
 exponent, or invalid leading-zero form. Query the current policy instead of
-assuming its default. For every payment, follow the returned
-`approval_required` or `approval_ready` status rather than predicting it.
+assuming its default. For every payment or plan, follow the returned
+`approval_required` or `approval_ready` status rather than predicting it from
+amount or route.
 
 ## Revoke
 

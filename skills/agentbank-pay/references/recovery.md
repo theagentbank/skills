@@ -24,8 +24,12 @@ Only for `recipient_correction_required`:
 ## Cancellation
 
 Call `cancel_payment` only after explicit confirmation and only before funds
-move. A World ID challenge may remain visible until expiry, but cannot resume a
-cancelled payment.
+move. Cancellation also cancels a pending approval; never tell the human to
+finish an approval for a cancelled payment.
+
+For a draft or submitted plan, call `review_payment_plan` first. Use
+`cancel_payment_plan` only after explicit confirmation; it cancels unstarted
+items and releases unopened route locks but cannot interrupt moved funds.
 
 If `funds_moved=true`, do not promise cancellation, duplicate funding, or
 automatically create a replacement.
@@ -34,6 +38,10 @@ automatically create a replacement.
 
 Read `failure.code`, `stage`, `message`, `retryable`, and `funds_moved`.
 
+- For terminal `status=expired` with `failure.code=payment_expired`, the locked
+  pre-funding route expired before continuation. It is not retryable for that
+  payment: obtain a fresh estimate and confirmation, then create a new payment
+  with a new logical request ID.
 - If funds did not move and a route or approval expired, create a fresh
   estimate and obtain fresh confirmation before a new payment.
 - If funds moved, explain the state and continue tracking or escalate. Do not
@@ -42,3 +50,5 @@ Read `failure.code`, `stage`, `message`, `retryable`, and `funds_moved`.
 
 Reuse the same request ID after an ambiguous submission of the same mutation.
 Never create a replacement solely because a local MCP process restarted.
+An authorized sibling installation may inspect or cancel an owner-scoped
+payment, but must apply the same confirmation and funds-moved rules.

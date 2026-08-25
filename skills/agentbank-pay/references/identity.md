@@ -1,8 +1,9 @@
 # Identity and verification
 
-Call `check_verification_status` when KYC or badges affect a task. Its markets
-describe provider-agnostic KYC readiness by country, not live route
-availability; use quote-book tools for live corridors.
+Call `check_verification_status` when KYC or badges affect a task. Its `markets`
+describe provider-agnostic readiness by country and may include route direction
+and supported instruments. They are not amount-specific live quotes; use
+quote-book tools and `estimate_payment` for executable corridors.
 
 If KYC is missing:
 

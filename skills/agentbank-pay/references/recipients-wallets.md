@@ -16,12 +16,18 @@ bank fields, or weak context. Estimates remain recipient-free; use returned
 `recipient_id` or canonical `recipient_fields` only in `create_payment.destination`.
 
 The quote is authoritative: `qr` requires `country` and `qr_content`;
-`bank_transfer` requires `country`, `bank_code`, `account_number`, and
+`bank_transfer` requires `country`, `bank_name`, `account_number`, and
 `holder_name`; `mobile_money` requires `country`, `mobile_money_network_code`,
 and `mobile_money_destination`. The mobile-money destination is opaque: do not
 force E.164 or request a holder name unless the selected requirement requires it.
 When `holder_name_must_match_kyc=true`, explain that the submitted name must
 equal the user's verified KYC legal name; never request or disclose that name.
+
+Before collecting a bank-transfer recipient, call `get_supported_bank_names`
+for the final fiat rail. Present only its returned canonical names and submit
+the human's exact choice as `bank_name`; never guess a provider `bank_code` or
+claim a guessed name is canonical. Provider `bank_code` values may appear in
+canonical responses but are not a public input.
 
 For local stdio, an image can use absolute `image.path`; remote clients use
 `image.data_base64`. QR images must contain a readable QR. Pass text-only
@@ -30,8 +36,9 @@ screenshots as visible `pasted_text` or `bank_info`.
 For `information_required`, ask only for listed missing or invalid fields. Keep
 the request ID only if the payload is unchanged; use a new one after a change.
 
-Use `update_recipient` only after the human confirms replacement fields. It
-creates a replacement record and does not revoke the old one.
+Use `update_recipient` only after the human confirms replacement fields. Pass
+`payment_instrument` when changing the instrument. It creates a replacement
+record and does not revoke the old one.
 
 ## Wallets
 

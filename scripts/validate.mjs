@@ -192,8 +192,34 @@ try {
   if (Number.isNaN(Date.parse(marker.source_committed_at))) {
     errors.push('protocol-core-sync.json source_committed_at must be an ISO timestamp');
   }
+  if (marker.mcp_package !== 'agent-bank-mcp') {
+    errors.push('protocol-core-sync.json mcp_package must be agent-bank-mcp');
+  }
+  if (!/^\d+\.\d+\.\d+$/.test(marker.mcp_version ?? '')) {
+    errors.push('protocol-core-sync.json mcp_version must be an exact stable version');
+  }
+  if (!Number.isInteger(marker.mcp_tool_count) || marker.mcp_tool_count < 1) {
+    errors.push('protocol-core-sync.json mcp_tool_count must be a positive integer');
+  }
 } catch (error) {
   errors.push(`protocol-core-sync.json is invalid: ${error.message}`);
+}
+
+const canonicalWorkflow = [skill];
+for (const filename of REFERENCE_FILES) {
+  canonicalWorkflow.push(
+    await readFile(path.join(skillRoot, 'references', filename), 'utf8'),
+  );
+}
+const canonicalText = canonicalWorkflow.join('\n');
+for (const stale of [
+  'humanfx_claimed',
+  'Earlier local stores are deliberately not imported',
+  'non-USD-stable routes always require World ID',
+]) {
+  if (canonicalText.includes(stale)) {
+    errors.push(`Canonical skill contains stale protocol guidance: ${stale}`);
+  }
 }
 
 const secretPatterns = [

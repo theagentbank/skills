@@ -5,7 +5,7 @@ license: MIT
 compatibility: Designed for Codex, Claude Code, and Hermes. Installation requires Node.js 22.20+ and internet access.
 metadata:
   author: theagentbank
-  version: "1.3.0"
+  version: "1.4.0"
 ---
 
 # AgentBank Pay
@@ -93,7 +93,12 @@ one-time restart.
 - Treat an approval-threshold update as a security-policy change. Call
   `update_payment_approval_policy` only after explicit human confirmation.
 - Follow the payment's returned approval status. Never infer World ID behavior
-  from a fixed threshold.
+  from a fixed threshold or route composition.
+- Use payment plans only for multiple independently settled payments that the
+  human wants to review together under one approval. Review every plan item
+  before submission; a draft plan does not move funds.
+- Treat `status=expired` with `failure.code=payment_expired` as terminal. Obtain
+  a fresh estimate and confirmation, then create a new payment.
 - Never expose partner identity or use hidden primitive intent, route,
   approval, settlement, or raw-swap mutations.
 
@@ -133,9 +138,10 @@ Load only the references needed for the current task.
 ## Tool groups
 
 ```text
-Setup/security: whoami, begin_agent_onboarding, wait_for_agent_onboarding, get_installation_status, get_account_status, check_my_scopes, get_payment_approval_policy, update_payment_approval_policy, revoke_agent
+Setup/security: whoami, relogin, begin_agent_onboarding, wait_for_agent_onboarding, get_installation_status, get_account_status, check_my_scopes, get_payment_approval_policy, update_payment_approval_policy, revoke_agent
 Identity: check_verification_status, do_kyc, get_verification_guidance, verify_agent_kit
-Discovery: list_currencies, get_supported_payment_capabilities, list_quote_book_pairs, browse_quote_book, get_ramp_quote, estimate_payment
+Discovery: list_currencies, get_supported_payment_capabilities, get_supported_bank_names, list_quote_book_pairs, browse_quote_book, get_ramp_quote, estimate_payment
+Plans: create_payment_plan, review_payment_plan, list_payment_plans, submit_payment_plan, cancel_payment_plan
 Payments: create_payment, continue_payment, execute_payment_instruction, get_payment, list_payments, cancel_payment, correct_payment_recipient
 Recipients: list_recipients, get_recipient, create_recipient, update_recipient
 Wallets: list_wallets, get_wallet_balances, get_token_allowance, approve_token, get_transaction_receipt

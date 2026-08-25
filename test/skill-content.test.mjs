@@ -48,11 +48,14 @@ test('documents client-affine credential recovery without duplicate onboarding',
   assert.match(skill, /configured AgentBank MCP server in the active\s+client and profile/);
   assert.match(skill, /post-restart call succeeds/);
   assert.match(onboarding, /status=authorized[\s\S]*resumed=true/);
+  assert.match(onboarding, /`UNAUTHENTICATED`[\s\S]*call\s+`relogin` once/);
+  assert.match(onboarding, /Do not begin new onboarding for an expired\s+session/);
   assert.match(onboarding, /CREDENTIAL_STORE_CORRUPT/);
   assert.match(onboarding, /never start duplicate onboarding/);
   assert.match(onboarding, /HFX_MCP_PROFILE/);
   assert.match(onboarding, /HFX_MCP_DATA_DIR/);
-  assert.match(onboarding, /Earlier local stores are deliberately not imported/);
+  assert.match(onboarding, /copying the complete MCP data\s+directory also copies its local vault key/);
+  assert.doesNotMatch(onboarding, /humanfx_claimed/);
 });
 
 test('uses quote-driven fiat recipient instruments', async () => {
@@ -62,6 +65,9 @@ test('uses quote-driven fiat recipient instruments', async () => {
 
   assert.match(recipients, /`recipient_requirements`/);
   assert.match(recipients, /choose exactly one listed\s+`payment_instrument`/);
+  assert.match(recipients, /`bank_transfer` requires `country`, `bank_name`/);
+  assert.match(recipients, /call `get_supported_bank_names`/);
+  assert.match(recipients, /Provider `bank_code` values[\s\S]*not a\s+public input/);
   assert.match(recipients, /mobile-money destination is opaque/);
   assert.match(recipients, /holder_name_must_match_kyc=true/);
 });
@@ -106,10 +112,36 @@ test('confirms effective two-hop amounts and dynamic approval behavior', async (
   assert.match(skill, /update_payment_approval_policy/);
   assert.match(onboarding, /get_payment_approval_policy/);
   assert.match(onboarding, /explicit human confirmation/);
-  assert.match(onboarding, /non-USD-stable routes always require World ID/);
-  assert.match(payments, /Do not assume a fixed threshold/);
+  assert.match(onboarding, /on-ramp-first payments currently bypass World ID/);
+  assert.match(payments, /Never predict\s+approval from a fixed threshold/);
   assert.match(payments, /`approval_ready` with\s+`approval:null`/);
   assert.doesNotMatch(payments, /at most 10 USD/);
+});
+
+test('documents payment plans and terminal pre-funding expiry', async () => {
+  const [skill, payments, recovery] = await Promise.all([
+    read('skills/agentbank-pay/SKILL.md'),
+    read('skills/agentbank-pay/references/payments.md'),
+    read('skills/agentbank-pay/references/recovery.md'),
+  ]);
+
+  for (const tool of [
+    'create_payment_plan',
+    'review_payment_plan',
+    'list_payment_plans',
+    'submit_payment_plan',
+    'cancel_payment_plan',
+  ]) {
+    assert.match(skill, new RegExp(tool));
+    assert.match(payments, new RegExp(tool));
+  }
+  assert.match(payments, /Plan-bound creates may\s+omit `confirmed_by_user`/);
+  assert.match(payments, /standalone creates still require it to be `true`/);
+  assert.match(payments, /`status=plan_draft`/);
+  assert.match(payments, /on-ramp-first payments currently bypass World ID/);
+  assert.match(recovery, /`failure\.code=payment_expired`/);
+  assert.match(recovery, /not retryable for that\s+payment/);
+  assert.match(recovery, /Cancellation also cancels a pending approval/);
 });
 
 test('documents quote-unavailable and latest recipient recovery', async () => {

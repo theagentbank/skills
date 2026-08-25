@@ -21,13 +21,26 @@ const relevantPaths = [
   'mcp-agent-server',
   'backend-core/src/modules/agent',
   'backend-core/src/modules/identity',
+  'backend-core/src/modules/currency',
+  'backend-core/src/modules/intent',
   'backend-core/src/modules/payment',
+  'backend-core/src/modules/quote-book',
+  'backend-core/src/modules/route-agreement',
+  'backend-core/src/modules/settlement',
+  'backend-core/src/common/errors',
+  'backend-core/src/config',
+  'backend-core/src/migrations',
   'humanfx-inhouse-solver/src',
 ];
 const generatedCompatibilityPaths = new Set([
   'mcp-agent-server/skills/agentbank-pay/SKILL.md',
   'mcp-agent-server/skills/agentbank-pay/agents/openai.yaml',
 ]);
+
+function isGeneratedProtocolArtifact(changedPath) {
+  return generatedCompatibilityPaths.has(changedPath) ||
+    /^mcp-agent-server\/agent-bank-mcp-\d+\.\d+\.\d+\.tgz$/.test(changedPath);
+}
 
 function git(gitArgs) {
   const result = spawnSync('git', ['-C', target, ...gitArgs], {
@@ -53,7 +66,7 @@ const dirty = git([
   .filter(Boolean)
   .filter((line) => {
     const changedPath = parsePorcelainPath(line);
-    return !generatedCompatibilityPaths.has(changedPath);
+    return !isGeneratedProtocolArtifact(changedPath);
   });
 
 if (head === marker.source_commit && dirty.length === 0) {

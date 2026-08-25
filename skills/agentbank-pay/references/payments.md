@@ -29,7 +29,8 @@ Use structured assets:
 ```
 
 Use `list_currencies` whenever a code, chain, address, or decimals need
-verification.
+verification. Source and destination cannot be the same asset; ask what value
+the human actually wants moved instead of creating a no-op payment.
 
 ## Find a live route
 
@@ -128,17 +129,43 @@ For a two-hop route, preserve hop order. The MCP internally injects
 `recipient_ref:{"hop_index":1}` into hop 0 and the top-level destination
 recipient into hop 1. Do not construct that plumbing yourself.
 
+## Payment plans
+
+Use a plan only when the human wants several independently settled payments
+reviewed together under one World ID approval. A plan never combines recipients,
+funds, or settlement instructions.
+
+1. Call `create_payment_plan` with a concise description and a new stable
+   request ID.
+2. Estimate each item and show one consolidated review containing every
+   recipient, amount, fee and fee currency, route, expiry, and warning.
+3. Obtain explicit confirmation for the complete plan.
+4. Call `create_payment` for each item with the returned `plan_id`, a unique
+   positive `plan_position`, and a unique request ID. Plan-bound creates may
+   omit `confirmed_by_user`; standalone creates still require it to be `true`.
+5. Call `review_payment_plan` and verify every intended item and position.
+6. Call `submit_payment_plan` with a new request ID and
+   `confirmed_by_user=true`. Submission seals the plan and may return the one
+   approval URL covering all items.
+7. After approval, track and continue each payment independently.
+
+`status=plan_draft` means the payment is durable but cannot be continued until
+the plan is submitted. Never modify a submitted plan. Use `list_payment_plans`
+to recover an interrupted plan, and `cancel_payment_plan` only after human
+confirmation and before funds move.
+
 ## Approval and continuation
 
 For `approval_required`, show `approval.approval_url`, explain that the payment
 owner signs in before World ID is shown, state expiry, and ask the human to
 approve in World App. Never request or reconstruct a raw proof.
 
-Core evaluates this installation's current World ID approval policy against the
-locked route. Do not assume a fixed threshold. Non-USD-stable routes always
-require World ID. Follow the returned status: for `approval_ready` with
-`approval:null`, call `continue_payment` directly; for `approval_required`,
-show the approval URL, wait for the human, and poll `get_payment` until ready.
+Core applies the installation threshold only where current payment rules make
+it applicable; on-ramp-first payments currently bypass World ID. Never predict
+approval from a fixed threshold, asset, amount, or route composition. Follow the
+returned status: for `approval_ready` with `approval:null`, call
+`continue_payment` directly; for `approval_required`, show the approval URL,
+wait for the human, and poll `get_payment` until ready.
 
 ## Follow the instruction exactly
 
@@ -169,9 +196,14 @@ aggregate. Never separately fund hop 1: that duplicates funding.
 Poll `get_payment` according to `next_action.poll_after_seconds`. It is the
 authoritative state.
 
+Use its timeline for plan position, approval stage, source and destination
+progress, fiat collection/payout details, explorer links, and per-hop hashes.
+Do not flatten divergent or out-of-order progress into a completed state.
+
 Do not report a multi-hop payment complete until the aggregate is `completed`.
 When complete, report each available `hops[].receipt.crypto_tx_hash` as that
 hop's chain reference.
 
-Use `list_payments` for history. If an earlier payment is ambiguous, compare
-assets, amounts, state, and time, then ask which one the human means.
+Use `list_payments` for owner-scoped history. An authorized sibling installation
+may recover the same owner's payment. If an earlier payment is ambiguous,
+compare assets, amounts, state, and time, then ask which one the human means.
