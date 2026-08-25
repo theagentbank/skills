@@ -28,7 +28,7 @@ const child = spawn('npx', npxArgs, {
   stdio: ['pipe', 'pipe', 'pipe'],
 });
 
-const expectedTools = [
+const baseExpectedTools = [
   'begin_agent_onboarding',
   'wait_for_agent_onboarding',
   'relogin',
@@ -43,7 +43,6 @@ const expectedTools = [
   'check_my_scopes',
   'list_currencies',
   'get_supported_payment_capabilities',
-  'get_supported_bank_names',
   'list_quote_book_pairs',
   'browse_quote_book',
   'get_ramp_quote',
@@ -73,6 +72,10 @@ const expectedTools = [
   'list_wallets',
   'verify_agent_kit',
 ];
+const expectedToolsByVersion = new Map([
+  ['0.1.24', baseExpectedTools],
+  ['0.1.25', [...baseExpectedTools, 'get_supported_bank_names']],
+]);
 let stderr = '';
 let initialized = false;
 let settled = false;
@@ -151,6 +154,13 @@ readline.createInterface({ input: child.stdout }).on('line', (line) => {
     }
     const tools = message.result?.tools ?? [];
     const actualTools = tools.map((tool) => tool.name);
+    const expectedTools = expectedToolsByVersion.get(serverVersion);
+    if (!expectedTools) {
+      finish(new Error(
+        `No audited MCP contract is recorded for version ${serverVersion}`,
+      ));
+      return;
+    }
     const expectedSet = new Set(expectedTools);
     const actualSet = new Set(actualTools);
     const missing = expectedTools.filter((name) => !actualSet.has(name));
@@ -253,13 +263,15 @@ readline.createInterface({ input: child.stdout }).on('line', (line) => {
       return;
     }
 
-    const bankNamesSchema = byName.get('get_supported_bank_names')?.inputSchema;
-    if (
-      bankNamesSchema?.properties?.rail?.type !== 'string' ||
-      !bankNamesSchema?.required?.includes('rail')
-    ) {
-      finish(new Error('get_supported_bank_names must require the destination rail'));
-      return;
+    if (expectedSet.has('get_supported_bank_names')) {
+      const bankNamesSchema = byName.get('get_supported_bank_names')?.inputSchema;
+      if (
+        bankNamesSchema?.properties?.rail?.type !== 'string' ||
+        !bankNamesSchema?.required?.includes('rail')
+      ) {
+        finish(new Error('get_supported_bank_names must require the destination rail'));
+        return;
+      }
     }
 
     finish(null, { count: actualSet.size });

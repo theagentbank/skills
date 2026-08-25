@@ -140,7 +140,7 @@ Load only the references needed for the current task.
 ```text
 Setup/security: whoami, relogin, begin_agent_onboarding, wait_for_agent_onboarding, get_installation_status, get_account_status, check_my_scopes, get_payment_approval_policy, update_payment_approval_policy, revoke_agent
 Identity: check_verification_status, do_kyc, get_verification_guidance, verify_agent_kit
-Discovery: list_currencies, get_supported_payment_capabilities, get_supported_bank_names, list_quote_book_pairs, browse_quote_book, get_ramp_quote, estimate_payment
+Discovery: list_currencies, get_supported_payment_capabilities, get_supported_bank_names (0.1.25+), list_quote_book_pairs, browse_quote_book, get_ramp_quote, estimate_payment
 Plans: create_payment_plan, review_payment_plan, list_payment_plans, submit_payment_plan, cancel_payment_plan
 Payments: create_payment, continue_payment, execute_payment_instruction, get_payment, list_payments, cancel_payment, correct_payment_recipient
 Recipients: list_recipients, get_recipient, create_recipient, update_recipient

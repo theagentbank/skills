@@ -293,7 +293,7 @@ When the human elects to create a reviewed fiat payment, read that estimate's `r
 
 The quote is authoritative: `qr` requires `country` and `qr_content`; `bank_transfer` requires `country`, `bank_name`, `account_number`, and `holder_name`; `mobile_money` requires `country`, `mobile_money_network_code`, and `mobile_money_destination`. The mobile-money destination is opaque: do not force E.164 or request a holder name unless the selected requirement requires it. When `holder_name_must_match_kyc=true`, explain that the submitted name must equal the user's verified KYC legal name; never request or disclose that name.
 
-Before collecting a bank-transfer recipient, call `get_supported_bank_names` for the final fiat rail. Present only its returned canonical names and submit the human's exact choice as `bank_name`; never guess a provider `bank_code` or claim a guessed name is canonical. Provider `bank_code` values may appear in canonical responses but are not a public input.
+Before collecting a bank-transfer recipient, call `get_supported_bank_names` for the final fiat rail when the active MCP exposes it (`0.1.25+`). Present only its returned canonical names and submit the human's exact choice as `bank_name`. On `0.1.24`, where that tool is absent, ask the human for the exact bank name; if Core rejects it, show the supported-values error and ask the human to choose again. Never guess a provider `bank_code` or claim a guessed name is canonical. Provider `bank_code` values may appear in canonical responses but are not a public input.
 
 For local stdio, an image can use absolute `image.path`; remote clients use `image.data_base64`. QR images must contain a readable QR. Pass text-only screenshots as visible `pasted_text` or `bank_info`.
 

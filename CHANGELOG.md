@@ -20,6 +20,8 @@ This project follows [Semantic Versioning](https://semver.org/).
   `payment_instrument` and human-confirmed `bank_name` handling.
 - Updated onboarding recovery, Linux vault security, on-ramp-first World ID
   behavior, approval cancellation, and owner-scoped sibling recovery.
+- Kept the live MCP gate strict across the `0.1.24` to `0.1.25` rollout and
+  documented safe bank-name handling before the discovery tool is available.
 
 ## [1.3.0] - 2026-08-06
 

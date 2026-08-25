@@ -67,6 +67,8 @@ test('uses quote-driven fiat recipient instruments', async () => {
   assert.match(recipients, /choose exactly one listed\s+`payment_instrument`/);
   assert.match(recipients, /`bank_transfer` requires `country`, `bank_name`/);
   assert.match(recipients, /call `get_supported_bank_names`/);
+  assert.match(recipients, /On `0\.1\.24`, where that tool is absent/);
+  assert.match(recipients, /show the supported-values error/);
   assert.match(recipients, /Provider `bank_code` values[\s\S]*not a\s+public input/);
   assert.match(recipients, /mobile-money destination is opaque/);
   assert.match(recipients, /holder_name_must_match_kyc=true/);
