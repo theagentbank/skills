@@ -69,6 +69,8 @@ store, or secret settings unless an operator explicitly manages that host.
   policy
 - KYC, World ID handoffs, and AgentKit wallet verification
 - Live route discovery and recipient-free payment estimates
+- Current multi-chain asset discovery, including USDT on BNB Smart Chain
+- Dedicated, review-first x402 outbound payment lifecycle
 - Fiat and crypto recipient canonicalization
 - Shared Privy wallet balances and server-owned instruction execution
 - Direct and explicit two-hop payments

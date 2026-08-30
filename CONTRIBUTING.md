@@ -41,7 +41,7 @@ moves funds.
 For a pre-publish release candidate, point the same check at its packed tarball:
 
 ```bash
-AGENTBANK_MCP_PACKAGE=../protocol-core/mcp-agent-server/agent-bank-mcp-candidate.tgz AGENTBANK_MCP_EXPECTED_VERSION=0.1.25 npm run smoke:mcp
+AGENTBANK_MCP_PACKAGE=../protocol-core/mcp-agent-server/agent-bank-mcp-candidate.tgz AGENTBANK_MCP_EXPECTED_VERSION=0.1.27 npm run smoke:mcp
 ```
 
 The default command intentionally resolves `agent-bank-mcp@latest` from npm and

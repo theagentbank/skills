@@ -1,11 +1,11 @@
 {
   "source_repository": "HumanFX/protocol-core",
   "source_branch": "development/1.0.0",
-  "source_commit": "10902935d66cd4ae02667bd51111744072452953",
-  "source_committed_at": "2026-08-25T13:48:57+07:00",
+  "source_commit": "0e1403c61b84028a392a0d543ed3f859ddccfd7d",
+  "source_committed_at": "2026-08-29T18:54:37+07:00",
   "audit_baseline_commit": "c43410e",
   "previous_skills_sync_commit": "e85e469bddc4753e441ef4bb6314a4b802886434",
   "mcp_package": "agent-bank-mcp",
-  "mcp_version": "0.1.25",
-  "mcp_tool_count": 43
+  "mcp_version": "0.1.27",
+  "mcp_tool_count": 46
 }

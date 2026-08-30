@@ -25,12 +25,19 @@ Use structured assets:
 ```
 
 ```json
+{ "type": "crypto", "ticker": "USDT", "chain": "bsc" }
+```
+
+```json
 { "type": "fiat", "symbol": "VND" }
 ```
 
-Use `list_currencies` whenever a code, chain, address, or decimals need
-verification. Source and destination cannot be the same asset; ask what value
-the human actually wants moved instead of creating a no-op payment.
+Use `get_supported_payment_capabilities` for the current high-level route
+catalog and `list_currencies` whenever a code, chain, address, or decimals need
+verification. The current catalog includes USDT on BNB Smart Chain (`bsc`) in
+addition to World Chain assets; never substitute a token or chain, or infer
+cross-chain swap support. Source and destination cannot be the same asset; ask
+what value the human actually wants moved instead of creating a no-op payment.
 
 ## Find a live route
 
@@ -190,6 +197,24 @@ owns and verifies the pinned plan.
 
 For linked two-hop payments, act only on the first/source hop and then track the
 aggregate. Never separately fund hop 1: that duplicates funding.
+
+## External x402 payments
+
+Use the dedicated x402 tools only when the human asks to pay a URL that returns
+an x402 payment challenge. Call `estimate_x402_outbound_payment` with the exact
+URL, request method/body, and proposed funding asset; it creates a durable
+intent but does not move funds. Show the returned external requirement, funding
+amount, fees, pay-to address, and expiry, then obtain explicit confirmation
+before `confirm_x402_outbound_payment`.
+
+Follow the current server-generated funding action exactly and use
+`get_x402_outbound_payment` as the authoritative state; use
+`list_x402_outbound_payments` to recover a lost intent ID. Do not create a
+replacement intent after an interruption. Current public x402 flows support
+live fiat on-ramps, not manually funded USDC: never construct an x402 header,
+EIP-3009 authorization, transaction, signature, or `payment_signature`
+locally. A token transfer hash does not prove the external resource accepted
+payment.
 
 ## Track
 

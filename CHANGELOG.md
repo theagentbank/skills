@@ -4,6 +4,19 @@ All notable user-visible changes are recorded here.
 
 This project follows [Semantic Versioning](https://semver.org/).
 
+## [1.5.0] - 2026-08-30
+
+### Changed
+
+- Synced the payment contract to `agent-bank-mcp@0.1.27` from Protocol Core
+  development and documented USDT on BNB Smart Chain (`bsc`) alongside the
+  existing World Chain assets.
+- Require live capability and currency discovery before selecting an
+  asset-and-chain pair, including the shared-wallet on-ramp destination.
+- Added the four-tool, server-owned x402 outbound-payment lifecycle.
+- Removed the unavailable `get_supported_bank_names` call from production
+  guidance; bank names remain Core-validated on recipient creation.
+
 ## [1.4.0] - 2026-08-24
 
 ### Added

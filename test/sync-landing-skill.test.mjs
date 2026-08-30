@@ -24,7 +24,7 @@ test('landing sync records an immutable release label and exact content hash', a
   const manifest = JSON.parse(
     await readFile(path.join(target, 'public', 'agentbank-pay.manifest.json'), 'utf8'),
   );
-  assert.equal(manifest.release, 'v1.4.0');
+  assert.equal(manifest.release, 'v1.5.0');
   assert.equal(manifest.sourceCommit, 'b'.repeat(40));
   assert.equal(manifest.sha256, sha256(skill));
 });

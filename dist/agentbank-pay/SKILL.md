@@ -5,7 +5,7 @@ license: MIT
 compatibility: Designed for Codex, Claude Code, and Hermes. Installation requires Node.js 22.20+ and internet access.
 metadata:
   author: theagentbank
-  version: "1.4.0"
+  version: "1.5.0"
 ---
 
 <!-- GENERATED from theagentbank/skills. Do not edit this compatibility copy directly. -->
@@ -47,6 +47,7 @@ Run onboarding only through the configured AgentBank MCP server in the active cl
 - Never request or expose private keys, seed phrases, AgentBank JWTs, Privy tokens, authorization keys, or World ID proofs.
 - Never infer recipient fields, wallet addresses, token contracts, chains, decimals, amounts, or calldata from weak context.
 - Use decimal strings for human amounts and structured asset objects.
+- Use `get_supported_payment_capabilities` and `list_currencies` as the current authority for supported asset-and-chain pairs; do not assume every crypto route is on World Chain.
 - Keep estimates recipient-free. Resolve recipient data only after the human elects to create the reviewed route and before `create_payment`.
 - Show recipient, send amount, receive amount, every fee and currency, route, expiry, and material warnings before creating a payment.
 - Set `confirmed_by_user=true` only after the human confirms that complete summary. Reconfirm after a material change.
@@ -174,10 +175,14 @@ Use structured assets:
 ```
 
 ```json
+{ "type": "crypto", "ticker": "USDT", "chain": "bsc" }
+```
+
+```json
 { "type": "fiat", "symbol": "VND" }
 ```
 
-Use `list_currencies` whenever a code, chain, address, or decimals need verification. Source and destination cannot be the same asset; ask what value the human actually wants moved instead of creating a no-op payment.
+Use `get_supported_payment_capabilities` for the current high-level route catalog and `list_currencies` whenever a code, chain, address, or decimals need verification. The current catalog includes USDT on BNB Smart Chain (`bsc`) in addition to World Chain assets; never substitute a token or chain, or infer cross-chain swap support. Source and destination cannot be the same asset; ask what value the human actually wants moved instead of creating a no-op payment.
 
 ## Find a live route
 
@@ -269,6 +274,12 @@ For `swap_execution`, show the confirmed source ceiling, destination amount, ass
 
 For linked two-hop payments, act only on the first/source hop and then track the aggregate. Never separately fund hop 1: that duplicates funding.
 
+## External x402 payments
+
+Use the dedicated x402 tools only when the human asks to pay a URL that returns an x402 payment challenge. Call `estimate_x402_outbound_payment` with the exact URL, request method/body, and proposed funding asset; it creates a durable intent but does not move funds. Show the returned external requirement, funding amount, fees, pay-to address, and expiry, then obtain explicit confirmation before `confirm_x402_outbound_payment`.
+
+Follow the current server-generated funding action exactly and use `get_x402_outbound_payment` as the authoritative state; use `list_x402_outbound_payments` to recover a lost intent ID. Do not create a replacement intent after an interruption. Current public x402 flows support live fiat on-ramps, not manually funded USDC: never construct an x402 header, EIP-3009 authorization, transaction, signature, or `payment_signature` locally. A token transfer hash does not prove the external resource accepted payment.
+
 ## Track
 
 Poll `get_payment` according to `next_action.poll_after_seconds`. It is the authoritative state.
@@ -293,7 +304,7 @@ When the human elects to create a reviewed fiat payment, read that estimate's `r
 
 The quote is authoritative: `qr` requires `country` and `qr_content`; `bank_transfer` requires `country`, `bank_name`, `account_number`, and `holder_name`; `mobile_money` requires `country`, `mobile_money_network_code`, and `mobile_money_destination`. The mobile-money destination is opaque: do not force E.164 or request a holder name unless the selected requirement requires it. When `holder_name_must_match_kyc=true`, explain that the submitted name must equal the user's verified KYC legal name; never request or disclose that name.
 
-Before collecting a bank-transfer recipient, call `get_supported_bank_names` for the final fiat rail when the active MCP exposes it (`0.1.25+`). Present only its returned canonical names and submit the human's exact choice as `bank_name`. On `0.1.24`, where that tool is absent, ask the human for the exact bank name; if Core rejects it, show the supported-values error and ask the human to choose again. Never guess a provider `bank_code` or claim a guessed name is canonical. Provider `bank_code` values may appear in canonical responses but are not a public input.
+Before collecting a bank-transfer recipient, ask the human for their exact bank name and submit it as `bank_name`. If Core rejects it, show the supported-values error and ask the human to choose again. Never guess a provider `bank_code` or claim a guessed name is canonical. Provider `bank_code` values may appear in canonical responses but are not a public input.
 
 For local stdio, an image can use absolute `image.path`; remote clients use `image.data_base64`. QR images must contain a readable QR. Pass text-only screenshots as visible `pasted_text` or `bank_info`.
 
@@ -305,7 +316,7 @@ Use `update_recipient` only after the human confirms replacement fields. Pass `p
 
 Onboarding creates the bound Privy wallet as the default crypto recipient. Older installations may receive this record as a backfill when no crypto recipient exists. Recipients are human-owner scoped, so sibling installations may see the same record. Reuse it only when its chain and address match the active wallet from `list_wallets`, instead of creating a duplicate.
 
-For an on-ramp to the shared wallet, call `list_wallets` and use the active Worldchain address. Never request its private key.
+For an on-ramp to the shared wallet, call `list_wallets` and use the active wallet address for the reviewed asset chain (for example, World Chain USDC or BNB Smart Chain USDT). Never request its private key or substitute a chain.
 
 Call `get_wallet_balances` before a crypto deposit or swap instruction. Include the native balance because a non-AgentKit-verified Privy EOA pays its own gas.
 

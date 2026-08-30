@@ -75,6 +75,17 @@ const baseExpectedTools = [
 const expectedToolsByVersion = new Map([
   ['0.1.24', baseExpectedTools],
   ['0.1.25', [...baseExpectedTools, 'get_supported_bank_names']],
+  ['0.1.26', [...baseExpectedTools, 'get_supported_bank_names']],
+  [
+    '0.1.27',
+    [
+      ...baseExpectedTools,
+      'estimate_x402_outbound_payment',
+      'confirm_x402_outbound_payment',
+      'get_x402_outbound_payment',
+      'list_x402_outbound_payments',
+    ],
+  ],
 ]);
 let stderr = '';
 let initialized = false;

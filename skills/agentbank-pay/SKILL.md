@@ -5,7 +5,7 @@ license: MIT
 compatibility: Designed for Codex, Claude Code, and Hermes. Installation requires Node.js 22.20+ and internet access.
 metadata:
   author: theagentbank
-  version: "1.4.0"
+  version: "1.5.0"
 ---
 
 # AgentBank Pay
@@ -80,6 +80,9 @@ one-time restart.
 - Never infer recipient fields, wallet addresses, token contracts, chains,
   decimals, amounts, or calldata from weak context.
 - Use decimal strings for human amounts and structured asset objects.
+- Use `get_supported_payment_capabilities` and `list_currencies` as the
+  current authority for supported asset-and-chain pairs; do not assume every
+  crypto route is on World Chain.
 - Keep estimates recipient-free. Resolve recipient data only after the human
   elects to create the reviewed route and before `create_payment`.
 - Show recipient, send amount, receive amount, every fee and currency, route,
@@ -140,9 +143,10 @@ Load only the references needed for the current task.
 ```text
 Setup/security: whoami, relogin, begin_agent_onboarding, wait_for_agent_onboarding, get_installation_status, get_account_status, check_my_scopes, get_payment_approval_policy, update_payment_approval_policy, revoke_agent
 Identity: check_verification_status, do_kyc, get_verification_guidance, verify_agent_kit
-Discovery: list_currencies, get_supported_payment_capabilities, get_supported_bank_names (0.1.25+), list_quote_book_pairs, browse_quote_book, get_ramp_quote, estimate_payment
+Discovery: list_currencies, get_supported_payment_capabilities, list_quote_book_pairs, browse_quote_book, get_ramp_quote, estimate_payment
 Plans: create_payment_plan, review_payment_plan, list_payment_plans, submit_payment_plan, cancel_payment_plan
 Payments: create_payment, continue_payment, execute_payment_instruction, get_payment, list_payments, cancel_payment, correct_payment_recipient
+External x402: estimate_x402_outbound_payment, confirm_x402_outbound_payment, get_x402_outbound_payment, list_x402_outbound_payments
 Recipients: list_recipients, get_recipient, create_recipient, update_recipient
 Wallets: list_wallets, get_wallet_balances, get_token_allowance, approve_token, get_transaction_receipt
 Guidance: get_instructions

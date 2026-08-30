@@ -66,9 +66,8 @@ test('uses quote-driven fiat recipient instruments', async () => {
   assert.match(recipients, /`recipient_requirements`/);
   assert.match(recipients, /choose exactly one listed\s+`payment_instrument`/);
   assert.match(recipients, /`bank_transfer` requires `country`, `bank_name`/);
-  assert.match(recipients, /call `get_supported_bank_names`/);
-  assert.match(recipients, /On `0\.1\.24`, where that tool is absent/);
-  assert.match(recipients, /show the supported-values error/);
+  assert.match(recipients, /ask the human for their exact bank\s+name/);
+  assert.match(recipients, /show the supported-values\s+error/);
   assert.match(recipients, /Provider `bank_code` values[\s\S]*not a\s+public input/);
   assert.match(recipients, /mobile-money destination is opaque/);
   assert.match(recipients, /holder_name_must_match_kyc=true/);
@@ -99,6 +98,39 @@ test('uses recipient-free estimates and route-only hops', async () => {
   assert.match(payments, /recipient once in\s+`destination\.recipient_id`/);
   assert.match(recipients, /recipient-free/);
   assert.doesNotMatch(payments, /recipient validation/);
+});
+
+test('discovers BSC USDT as a supported asset-and-chain pair', async () => {
+  const [skill, payments, recipients] = await Promise.all([
+    read('skills/agentbank-pay/SKILL.md'),
+    read('skills/agentbank-pay/references/payments.md'),
+    read('skills/agentbank-pay/references/recipients-wallets.md'),
+  ]);
+
+  assert.match(skill, /get_supported_payment_capabilities.*list_currencies/s);
+  assert.match(payments, /"ticker": "USDT", "chain": "bsc"/);
+  assert.match(payments, /USDT on BNB Smart Chain/);
+  assert.match(payments, /never substitute a token or chain/);
+  assert.match(recipients, /BNB Smart Chain USDT/);
+});
+
+test('uses the server-owned x402 payment lifecycle', async () => {
+  const [skill, payments] = await Promise.all([
+    read('skills/agentbank-pay/SKILL.md'),
+    read('skills/agentbank-pay/references/payments.md'),
+  ]);
+
+  for (const tool of [
+    'estimate_x402_outbound_payment',
+    'confirm_x402_outbound_payment',
+    'get_x402_outbound_payment',
+    'list_x402_outbound_payments',
+  ]) {
+    assert.match(skill, new RegExp(tool));
+    assert.match(payments, new RegExp(tool));
+  }
+  assert.match(payments, /never construct an x402 header/i);
+  assert.match(payments, /does not prove the external resource accepted/i);
 });
 
 test('confirms effective two-hop amounts and dynamic approval behavior', async () => {
