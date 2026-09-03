@@ -8,8 +8,6 @@ metadata:
   version: "1.5.0"
 ---
 
-<!-- GENERATED from theagentbank/skills. Do not edit this compatibility copy directly. -->
-
 # AgentBank Pay
 
 Use the AgentBank MCP as the authority for onboarding, approvals, routes, payment instructions, transaction verification, and terminal payment state. Never replace its tools with direct HTTP requests or locally constructed protocol payloads.

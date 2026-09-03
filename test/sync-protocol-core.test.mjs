@@ -48,7 +48,10 @@ test('sync writes only the compatibility skill and supports drift checks', async
     'agentbank-pay',
     'SKILL.md',
   );
-  assert.match(await readFile(skill, 'utf8'), /GENERATED from theagentbank\/skills/);
+  assert.doesNotMatch(
+    await readFile(skill, 'utf8'),
+    /GENERATED from theagentbank\/skills/,
+  );
 });
 
 test('sync refuses to overwrite local edits unless forced', async (context) => {
@@ -75,5 +78,8 @@ test('sync refuses to overwrite local edits unless forced', async (context) => {
 
   const forced = run(target, ['--force']);
   assert.equal(forced.status, 0, forced.stderr);
-  assert.match(await readFile(skill, 'utf8'), /GENERATED from theagentbank\/skills/);
+  assert.doesNotMatch(
+    await readFile(skill, 'utf8'),
+    /GENERATED from theagentbank\/skills/,
+  );
 });
