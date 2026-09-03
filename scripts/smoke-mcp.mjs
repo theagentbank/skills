@@ -72,20 +72,19 @@ const baseExpectedTools = [
   'list_wallets',
   'verify_agent_kit',
 ];
+const x402ExpectedTools = [
+  ...baseExpectedTools,
+  'estimate_x402_outbound_payment',
+  'confirm_x402_outbound_payment',
+  'get_x402_outbound_payment',
+  'list_x402_outbound_payments',
+];
 const expectedToolsByVersion = new Map([
   ['0.1.24', baseExpectedTools],
   ['0.1.25', [...baseExpectedTools, 'get_supported_bank_names']],
   ['0.1.26', [...baseExpectedTools, 'get_supported_bank_names']],
-  [
-    '0.1.27',
-    [
-      ...baseExpectedTools,
-      'estimate_x402_outbound_payment',
-      'confirm_x402_outbound_payment',
-      'get_x402_outbound_payment',
-      'list_x402_outbound_payments',
-    ],
-  ],
+  ['0.1.27', x402ExpectedTools],
+  ['0.1.28', x402ExpectedTools],
 ]);
 let stderr = '';
 let initialized = false;
