@@ -45,14 +45,14 @@ jobs:
           app-id: ${{ vars.AGENTBANK_LANDING_SYNC_APP_ID }}
           private-key: ${{ secrets.AGENTBANK_LANDING_SYNC_PRIVATE_KEY }}
           owner: HumanFX
-          repositories: HumanFX-landingpage
+          repositories: humanfx-landing-page-v2
           permission-contents: write
           permission-pull-requests: write
 
       - name: Check out the landing page with the App token
         uses: actions/checkout@v4
         with:
-          repository: HumanFX/HumanFX-landingpage
+          repository: HumanFX/humanfx-landing-page-v2
           token: ${{ steps.app-token.outputs.token }}
           path: .landing-page
 
@@ -74,18 +74,19 @@ jobs:
           git config user.email "agentbank-skill-sync[bot]@users.noreply.github.com"
           git checkout -B "$branch"
 
-          if git diff --quiet -- public/SKILL.md public/agentbank-pay.manifest.json; then
+          git add public/SKILL.md public/agentbank-pay.manifest.json
+
+          if git diff --cached --quiet -- public/SKILL.md public/agentbank-pay.manifest.json; then
             echo "Landing-page skill is already current."
             exit 0
           fi
 
-          git add public/SKILL.md public/agentbank-pay.manifest.json
           git commit -m "chore: sync AgentBank skill ${SKILL_VERSION}"
           git push --force-with-lease origin "$branch"
 
-          if ! gh pr view "$branch" --repo HumanFX/HumanFX-landingpage >/dev/null 2>&1; then
+          if ! gh pr view "$branch" --repo HumanFX/humanfx-landing-page-v2 >/dev/null 2>&1; then
             gh pr create \
-              --repo HumanFX/HumanFX-landingpage \
+              --repo HumanFX/humanfx-landing-page-v2 \
               --base main \
               --head "$branch" \
               --title "chore: sync AgentBank skill ${SKILL_VERSION}" \
