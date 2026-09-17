@@ -79,12 +79,16 @@ const x402ExpectedTools = [
   'get_x402_outbound_payment',
   'list_x402_outbound_payments',
 ];
+const latestExpectedTools = x402ExpectedTools.filter(
+  (tool) => tool !== 'get_ramp_quote',
+);
 const expectedToolsByVersion = new Map([
   ['0.1.24', baseExpectedTools],
   ['0.1.25', [...baseExpectedTools, 'get_supported_bank_names']],
   ['0.1.26', [...baseExpectedTools, 'get_supported_bank_names']],
   ['0.1.27', x402ExpectedTools],
   ['0.1.28', x402ExpectedTools],
+  ['0.1.32', latestExpectedTools],
 ]);
 let stderr = '';
 let initialized = false;

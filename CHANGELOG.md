@@ -4,6 +4,17 @@ All notable user-visible changes are recorded here.
 
 This project follows [Semantic Versioning](https://semver.org/).
 
+## [1.6.0] - 2026-09-17
+
+### Changed
+
+- Synced the local MCP contract to `agent-bank-mcp@0.1.32` and its audited
+  45-tool production catalog.
+- Removed the retired `get_ramp_quote` workflow; live routes now use quote-book
+  discovery and `estimate_payment`.
+- Added collection journey routing, estimate-reuse rules, and terminal
+  `funding_timeout` recovery guidance.
+
 ## [1.5.0] - 2026-08-30
 
 ### Changed

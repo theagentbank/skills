@@ -32,17 +32,21 @@ Use structured assets:
 { "type": "fiat", "symbol": "VND" }
 ```
 
-Use `get_supported_payment_capabilities` for the current high-level route
+Use `get_supported_payment_capabilities` only for the static, high-level product
 catalog and `list_currencies` whenever a code, chain, address, or decimals need
-verification. The current catalog includes USDT on BNB Smart Chain (`bsc`) in
-addition to World Chain assets; never substitute a token or chain, or infer
-cross-chain swap support. Source and destination cannot be the same asset; ask
-what value the human actually wants moved instead of creating a no-op payment.
+verification. The catalog includes USDT on BNB Smart Chain (`bsc`) in addition
+to World Chain assets, but neither catalog confirms a live route, amount band,
+or user readiness. Never substitute a token or chain, or infer cross-chain swap
+support. Source and destination cannot be the same asset; ask what value the
+human actually wants moved instead of creating a no-op payment.
 
 ## Find a live route
 
 Call `list_quote_book_pairs` for live direct on/off-ramp corridors. Route
-discovery and estimation do not require a recipient.
+discovery and estimation do not require a recipient. A missing direct pair or
+static capability data does not prove a route is unavailable: for fiat-to-fiat
+and other composed flows, inspect both legs, join them on a common live crypto
+asset and chain, then call `estimate_payment`.
 
 For fiat-to-fiat or source-token-to-fiat:
 
@@ -54,7 +58,6 @@ For fiat-to-fiat or source-token-to-fiat:
 
 There is no automatic route planner. `browse_quote_book` is rough anonymous
 discovery; read rate, percentage fee, flat fee, and fee currency together.
-`get_ramp_quote` is direct on/off-ramp only.
 
 ## Estimate and confirm
 
@@ -64,7 +67,11 @@ two-hop routes. For two hops, pass the intermediate asset. Do not provide
 previews.
 
 Require `status=estimate_ready`. The estimate is ephemeral, has no estimate ID,
-and does not create a payment. Read the returned `source_amount`,
+and does not create a payment. Reuse it while the inputs are unchanged and
+`expires_at` has not passed; after confirmation, call `create_payment` rather
+than estimating again. Re-estimate only after expiry, a material input change,
+or `QUOTE_EXPIRED` / `PRICE_MISMATCH` from creation, then show the refreshed
+summary and obtain fresh confirmation. Read the returned `source_amount`,
 `destination_amount`, every leg's fee and currency, expiry, route,
 `intermediate_amount`, and returned `hops`. Expect
 `next_action.type=review_estimate`; `recipient_validation` is no longer part of

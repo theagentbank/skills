@@ -110,7 +110,7 @@ test('discovers BSC USDT as a supported asset-and-chain pair', async () => {
   assert.match(skill, /get_supported_payment_capabilities.*list_currencies/s);
   assert.match(payments, /"ticker": "USDT", "chain": "bsc"/);
   assert.match(payments, /USDT on BNB Smart Chain/);
-  assert.match(payments, /never substitute a token or chain/);
+  assert.match(payments, /Never substitute a token or chain/);
   assert.match(recipients, /BNB Smart Chain USDT/);
 });
 
@@ -196,4 +196,20 @@ test('documents quote-unavailable and latest recipient recovery', async () => {
   assert.match(recipients, /chain and address match/);
   assert.match(onboarding, /default crypto\s+recipient/);
   assert.match(onboarding, /scoped to the human owner/);
+});
+
+test('tracks the 0.1.32 estimate, discovery, and funding-timeout contract', async () => {
+  const [skill, payments, recovery] = await Promise.all([
+    read('skills/agentbank-pay/SKILL.md'),
+    read('skills/agentbank-pay/references/payments.md'),
+    read('skills/agentbank-pay/references/recovery.md'),
+  ]);
+
+  assert.match(skill, /\ncollect\ntrack\n/);
+  assert.doesNotMatch(skill, /get_ramp_quote/);
+  assert.match(payments, /does not prove a route is unavailable/);
+  assert.match(payments, /call `create_payment` rather\s+than estimating again/);
+  assert.match(payments, /`QUOTE_EXPIRED` \/ `PRICE_MISMATCH`/);
+  assert.match(recovery, /`status=funding_timeout`/);
+  assert.match(recovery, /Do not retry\s+or reopen that payment instruction/);
 });

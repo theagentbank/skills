@@ -42,6 +42,10 @@ Read `failure.code`, `stage`, `message`, `retryable`, and `funds_moved`.
   pre-funding route expired before continuation. It is not retryable for that
   payment: obtain a fresh estimate and confirmation, then create a new payment
   with a new logical request ID.
+- For terminal `status=funding_timeout` with `failure.code=funding_timeout`, the
+  funding deadline passed before Core received the required funds. Do not retry
+  or reopen that payment instruction; obtain a fresh estimate and confirmation
+  before creating a new payment with a new logical request ID.
 - If funds did not move and a route or approval expired, create a fresh
   estimate and obtain fresh confirmation before a new payment.
 - If funds moved, explain the state and continue tracking or escalate. Do not

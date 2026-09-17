@@ -5,7 +5,7 @@ license: MIT
 compatibility: Designed for Codex, Claude Code, and Hermes. Installation requires Node.js 22.20+ and internet access.
 metadata:
   author: theagentbank
-  version: "1.5.0"
+  version: "1.6.0"
 ---
 
 # AgentBank Pay
@@ -60,7 +60,19 @@ Run onboarding only through the configured AgentBank MCP server in the active cl
 
 ## Runtime guidance
 
-For setup, pay, track, recover, recipient, or wallet work, call `get_instructions` with the relevant journey. The `agentbank://guides/routing` and `agentbank://instructions/{journey}` resources are also authoritative.
+At the start of an unfamiliar or resumed workflow, call `get_instructions` with the relevant journey:
+
+```text
+setup
+pay
+collect
+track
+recover
+manage_recipients
+manage_wallets
+```
+
+The MCP resources `agentbank://guides/routing` and `agentbank://instructions/{journey}` are also authoritative. Follow newer runtime guidance when it does not conflict with the invariants above.
 
 
 ## Detailed workflow references
@@ -180,11 +192,11 @@ Use structured assets:
 { "type": "fiat", "symbol": "VND" }
 ```
 
-Use `get_supported_payment_capabilities` for the current high-level route catalog and `list_currencies` whenever a code, chain, address, or decimals need verification. The current catalog includes USDT on BNB Smart Chain (`bsc`) in addition to World Chain assets; never substitute a token or chain, or infer cross-chain swap support. Source and destination cannot be the same asset; ask what value the human actually wants moved instead of creating a no-op payment.
+Use `get_supported_payment_capabilities` only for the static, high-level product catalog and `list_currencies` whenever a code, chain, address, or decimals need verification. The catalog includes USDT on BNB Smart Chain (`bsc`) in addition to World Chain assets, but neither catalog confirms a live route, amount band, or user readiness. Never substitute a token or chain, or infer cross-chain swap support. Source and destination cannot be the same asset; ask what value the human actually wants moved instead of creating a no-op payment.
 
 ## Find a live route
 
-Call `list_quote_book_pairs` for live direct on/off-ramp corridors. Route discovery and estimation do not require a recipient.
+Call `list_quote_book_pairs` for live direct on/off-ramp corridors. Route discovery and estimation do not require a recipient. A missing direct pair or static capability data does not prove a route is unavailable: for fiat-to-fiat and other composed flows, inspect both legs, join them on a common live crypto asset and chain, then call `estimate_payment`.
 
 For fiat-to-fiat or source-token-to-fiat:
 
@@ -192,13 +204,13 @@ For fiat-to-fiat or source-token-to-fiat:
 2. Set `route.intermediate_asset` explicitly in `estimate_payment`.
 3. Prefer the requested route; otherwise compare executable outcomes including all fees.
 
-There is no automatic route planner. `browse_quote_book` is rough anonymous discovery; read rate, percentage fee, flat fee, and fee currency together. `get_ramp_quote` is direct on/off-ramp only.
+There is no automatic route planner. `browse_quote_book` is rough anonymous discovery; read rate, percentage fee, flat fee, and fee currency together.
 
 ## Estimate and confirm
 
 Call `estimate_payment` for direct ramps, same-chain crypto swaps, and explicit two-hop routes. For two hops, pass the intermediate asset. Do not provide `recipient_id` or `recipient_fields`: estimates are recipient-free route previews.
 
-Require `status=estimate_ready`. The estimate is ephemeral, has no estimate ID, and does not create a payment. Read the returned `source_amount`, `destination_amount`, every leg's fee and currency, expiry, route, `intermediate_amount`, and returned `hops`. Expect `next_action.type=review_estimate`; `recipient_validation` is no longer part of the estimate.
+Require `status=estimate_ready`. The estimate is ephemeral, has no estimate ID, and does not create a payment. Reuse it while the inputs are unchanged and `expires_at` has not passed; after confirmation, call `create_payment` rather than estimating again. Re-estimate only after expiry, a material input change, or `QUOTE_EXPIRED` / `PRICE_MISMATCH` from creation, then show the refreshed summary and obtain fresh confirmation. Read the returned `source_amount`, `destination_amount`, every leg's fee and currency, expiry, route, `intermediate_amount`, and returned `hops`. Expect `next_action.type=review_estimate`; `recipient_validation` is no longer part of the estimate.
 
 For a fiat destination, also read `recipient_requirements`. They are the authoritative instrument choices and field contract. Do not create a recipient or payment until the human chooses one listed `payment_instrument` and supplies its required fields.
 
@@ -357,6 +369,7 @@ If `funds_moved=true`, do not promise cancellation, duplicate funding, or automa
 Read `failure.code`, `stage`, `message`, `retryable`, and `funds_moved`.
 
 - For terminal `status=expired` with `failure.code=payment_expired`, the locked pre-funding route expired before continuation. It is not retryable for that payment: obtain a fresh estimate and confirmation, then create a new payment with a new logical request ID.
+- For terminal `status=funding_timeout` with `failure.code=funding_timeout`, the funding deadline passed before Core received the required funds. Do not retry or reopen that payment instruction; obtain a fresh estimate and confirmation before creating a new payment with a new logical request ID.
 - If funds did not move and a route or approval expired, create a fresh estimate and obtain fresh confirmation before a new payment.
 - If funds moved, explain the state and continue tracking or escalate. Do not invent partial two-hop recovery.
 - Never convert failure to success from a wallet receipt alone.
