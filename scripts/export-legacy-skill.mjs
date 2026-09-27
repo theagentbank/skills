@@ -1,5 +1,9 @@
 #!/usr/bin/env node
 
+// Rebuilds dist/agentbank-pay/SKILL.md (the backend file, byte for byte) from
+// the generated skill folder. The importer already writes this file; this
+// command exists to prove the folder round-trips.
+
 import { mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
