@@ -1,117 +1,66 @@
-# Setup and onboarding
+## 1. Set up the agent
 
-## Configure the MCP
+### Determine the MCP surface
 
-The bootstrap expects this exact stdio server:
+- **Local stdio:** `begin_agent_onboarding` and `execute_payment_instruction`
+  are available. It authenticates an installation on this device.
+- **Hosted OAuth:** `set_spending_limit` and `pay_within_spending_limit` are
+  available, while local onboarding tools are absent. OAuth already identifies
+  the human and the durable hosted installation; never attempt local onboarding
+  or request a local credential.
 
-```text
-name: agentbank
-command: npx
-args: -y agent-bank-mcp@latest
-environment: empty
-```
+As soon as the MCP tools are available, call `whoami` without waiting for
+another user message.
 
-The published package supplies the deployed AgentBank endpoint defaults. New
-installations must not add endpoint overrides.
+For hosted OAuth, then call `check_my_scopes` and `get_account_reference`. If an account is
+needed but absent, tell the human to finish their AgentBank sign-in; do not call
+`begin_agent_onboarding`. The hosted setup flow ends here.
 
-The bootstrap performs a no-op for an exact match, adds a missing
-configuration, and refuses to overwrite a conflict. For upgrade compatibility,
-it also accepts an otherwise exact configuration containing only the former
-`PROTOCOL_BASE_URL=https://protocol.agentbank.world` and
-`APP_BASE_URL=https://app.agentbank.world` overrides. Run it only through
-the availability gate in the main skill.
+For local stdio, continue with the installation flow below.
 
-Hermes uses the manual command in the main skill and `/reload-mcp`; the
-bootstrap script supports Codex and Claude Code only.
-
-## Onboard
-
-As soon as the tools load, call `whoami`.
+### Local stdio onboarding
 
 If it succeeds, call `get_account_status` and continue with the existing
 installation.
 
-If it returns `UNAUTHENTICATED` because the saved session expired, call
-`relogin` once and retry the original authenticated tool. `relogin` refreshes
-only the active local installation and never accepts or returns a credential,
-key, challenge, or signature. Do not begin new onboarding for an expired
-session.
+If it returns `UNAUTHENTICATED` because the stored session expired, call
+`relogin` once, then retry the original tool call. `relogin` signs a fresh
+challenge only for the active local installation; it never accepts or returns
+a credential, key, challenge, or signature. Do not begin a new onboarding flow
+for an expired session.
 
-If it returns a genuine `MISSING_CREDENTIAL`:
+If it returns `MISSING_CREDENTIAL`:
 
-1. Call `begin_agent_onboarding` once. It creates or resumes the local
-   installation and Privy device flow.
-2. Show `authorization_url`; explain that opening it once claims the agent and
-   grants shared Privy wallet access.
-3. Immediately call `wait_for_agent_onboarding` with the returned
-   `enrollment_id`. If it times out while pending, call it again with the same
-   enrollment ID.
-4. Verify `privy_authorized`, `wallet_bound`, and `authenticated`.
+1. Call `begin_agent_onboarding` once immediately. This creates or resumes the
+   local installation and the local wallet device flow.
+2. Show `authorization_url` and explain that its one browser approval claims
+   the agent and gives it access to its local wallet, a custodial signing key
+   bound to this installation and stored in the local credential vault.
+3. Call `wait_for_agent_onboarding` immediately with the returned
+   `enrollment_id`; it polls while the human approves. If it times out while the
+   enrollment remains pending, call it again with the same enrollment ID.
+4. Verify that the result reports the wallet authorized (`privy_authorized`),
+   `wallet_bound`, and `authenticated`.
 5. Call `whoami`, `check_my_scopes`, `get_account_status`, and `list_wallets`.
 
-If `begin_agent_onboarding` returns `status=authorized`, `authenticated=true`, and
-`resumed=true`, an existing installation was restored. There is no browser URL or
-enrollment ID. Verify `whoami`, scopes, account, and wallets, then restart or reload
-the same client and require one more successful `whoami` before saying setup is complete.
+For `CREDENTIAL_PROTECTOR_LOCKED`, `CREDENTIAL_PROTECTOR_UNAVAILABLE`,
+`CREDENTIAL_DEVICE_MISMATCH`, `CREDENTIAL_STORE_UNAVAILABLE`,
+`CREDENTIAL_STORE_CORRUPT`, `CREDENTIAL_STORE_CONFLICT`,
+`CREDENTIAL_PROFILE_MISMATCH`, or `SESSION_REFRESH_FAILED`, do not start a new
+onboarding flow. Preserve the installation, show the returned remediation, and
+retry only after the OS credential condition or connectivity problem is fixed.
 
-For `CREDENTIAL_PROTECTOR_LOCKED`, `CREDENTIAL_PROTECTOR_UNAVAILABLE`, `CREDENTIAL_DEVICE_MISMATCH`, `CREDENTIAL_STORE_UNAVAILABLE`, `CREDENTIAL_STORE_CORRUPT`, `CREDENTIAL_STORE_CONFLICT`, `CREDENTIAL_PROFILE_MISMATCH`, or `SESSION_REFRESH_FAILED`, preserve the installation. Remedy the returned OS storage or connectivity condition and retry in the same client/profile; never start duplicate onboarding, clear credentials, revoke the agent, or ask for secret material.
+Browser approval is the only required human step. Do not ask the human to
+repeat the setup request after MCP availability is confirmed. Do not call a legacy registration
+alias or start a second onboarding flow while one is pending.
 
-Browser approval is the only human onboarding step. Never ask for signing
-material, start a second flow while one is pending, or call a legacy
-registration alias.
+When the human asks to log out or reset this local agent:
 
-Denied, expired, cancelled, or revoked onboarding clears only the unfinished
-flow. A malformed or expired pending record is repaired without replacing an
-active installation. If authorization completed with the wallet bound,
-`begin_agent_onboarding` may restore the session and return
-`authenticated=true` and `resumed=true`; verify the same-client restart before
-reporting success.
-
-## Credential persistence
-
-AgentBank uses a deterministic encrypted per-profile vault. Codex, Claude Code/Desktop, and Hermes subprocesses share it; XDG, D-Bus, desktop-session, and client-process variables do not select another store. Roots are under the current user's local data directory on Windows/macOS and `~/.config/agentbank/mcp` on Linux. macOS uses Keychain, Windows current-user DPAPI, and Linux a private local key with `0700` directories and `0600` files.
-
-`HFX_MCP_PROFILE` selects a profile; `HFX_MCP_DATA_DIR` optionally sets a managed root. `vault` is default; established `auto` and `keychain` are deterministic-vault aliases. Use `file` only for managed/headless passphrase storage with `HFX_MCP_KEY_STORE_SECRET` and optional `HFX_MCP_KEY_STORE_FILE`.
-
-Do not claim that an earlier store will or will not be migrated unless the MCP
-returns that result. Never delete a credential store, change the profile, or
-paste secrets into chat as recovery. On Linux, copying the complete MCP data
-directory also copies its local vault key, so rely on disk encryption and
-protected backups when home-directory theft is in scope.
-
-Wallet binding creates the onboarding-bound Privy wallet as the default crypto
-recipient. Older installations may be backfilled when `list_recipients` finds
-no crypto recipient. The record is scoped to the human owner, so sibling
-installations may see it. Match its chain and address against `list_wallets`,
-then treat a match as the system-created wallet destination rather than an
-unexpected manually saved recipient.
-
-## World ID approval policy
-
-Call `get_payment_approval_policy` when the human asks how this installation's
-payment approval threshold is configured. The policy applies only to the
-current installation; sibling agents owned by the same human have independent
-policies.
-
-`update_payment_approval_policy` changes a security policy. Before calling it:
-
-1. Show the current policy and proposed threshold.
-2. Explain that the threshold applies only where the payment rules make it
-   applicable; on-ramp-first payments currently bypass World ID.
-3. Obtain explicit human confirmation.
-4. Pass `world_id_approval_threshold_usd` as a non-negative decimal string.
-
-The value supports at most 18 fractional digits and must not use a negative,
-exponent, or invalid leading-zero form. Query the current policy instead of
-assuming its default. For every payment or plan, follow the returned
-`approval_required` or `approval_ready` status rather than predicting it from
-amount or route.
-
-## Revoke
-
-When the human asks to log out or reset:
-
-1. Explain that revocation invalidates this installation, its sessions, and its
-   bound wallet authorization, then clears local credentials.
+1. Explain that revocation invalidates the installation, sessions, and bound
+   wallet authorization for this agent and clears local credentials.
 2. Obtain explicit confirmation.
 3. Call `revoke_agent({"confirm":true})`.
+
+For hosted OAuth, connection revocation is managed from the human-facing
+AgentBank connection settings. Never call a local revocation tool for it.
+

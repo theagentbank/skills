@@ -1,68 +1,80 @@
-# Recipients and wallets
+## 4. Resolve the recipient
 
-## Saved recipients
+For a saved destination:
 
-Call `list_recipients`, reuse only a clear rail-and-fields match, and call
-`get_recipient` for complete fields. Ask the human to choose if multiple
-records match. `verified=false` alone does not make a recipient invalid.
+1. Call `list_recipients`.
+2. Reuse a record only when the user request clearly matches its rail and
+   canonical fields.
+3. Call `get_recipient` when full fields are needed.
+4. Ask the human to choose when multiple records match.
 
-## New recipient data
+Do not describe a recipient as invalid solely because `verified` is false.
+That flag means verified holder metadata has not been established; route and
+partner validation remain authoritative.
 
-When the human elects to create a reviewed fiat payment, read that estimate's
-`recipient_requirements`. Ask the human to choose exactly one listed
-`payment_instrument`, then call `create_recipient` with that instrument and its
-required fields before `create_payment`. Never infer an instrument from a QR,
-bank fields, or weak context. Estimates remain recipient-free; use returned
-`recipient_id` or canonical `recipient_fields` only in `create_payment.destination`.
+For a new fiat or crypto recipient, call `create_recipient` with one or more of:
 
-The quote is authoritative: `qr` requires `country` and `qr_content`;
-`bank_transfer` requires `country`, `bank_name`, `account_number`, and
-`holder_name`; `mobile_money` requires `country`, `mobile_money_network_code`,
-and `mobile_money_destination`. The mobile-money destination is opaque: do not
-force E.164 or request a holder name unless the selected requirement requires it.
-When `holder_name_must_match_kyc=true`, explain that the submitted name must
-equal the user's verified KYC legal name; never request or disclose that name.
+- canonical `fields`;
+- structured `bank_info`;
+- labeled `pasted_text`;
+- raw `qr_content`;
+- a QR image.
 
-Before collecting a bank-transfer recipient, ask the human for their exact bank
-name and submit it as `bank_name`. If Core rejects it, show the supported-values
-error and ask the human to choose again. Never guess a provider `bank_code` or
-claim a guessed name is canonical. Provider `bank_code` values may appear in
-canonical responses but are not a public input.
+For every fiat recipient, first read the final quote's
+`recipient_requirements`, choose exactly one listed `payment_instrument`, and
+pass it to `create_recipient`. Never infer the instrument from the presence of
+a QR or bank fields. The field requirements are fixed:
 
-For local stdio, an image can use absolute `image.path`; remote clients use
-`image.data_base64`. QR images must contain a readable QR. Pass text-only
-screenshots as visible `pasted_text` or `bank_info`.
+```text
+qr:             country + qr_content
+bank_transfer:  country + bank_name + account_number + holder_name
+mobile_money:   country + mobile_money_network_code + mobile_money_destination
+```
 
-For `information_required`, ask only for listed missing or invalid fields. Keep
-the request ID only if the payload is unchanged; use a new one after a change.
+`mobile_money_destination` is an opaque provider-validatable value. Do not
+force E.164 and do not collect `holder_name` unless a future quote explicitly
+requires it. If the chosen bank-transfer requirement sets
+`holder_name_must_match_kyc=true`, explain that the submitted holder must equal
+the user's verified KYC legal name; do not request or disclose that KYC name.
 
-Use `update_recipient` only after the human confirms replacement fields. Pass
-`payment_instrument` when changing the instrument. It creates a replacement
-record and does not revoke the old one.
+Before collecting or creating a `bank_transfer` recipient, call
+`get_supported_bank_names` for the final fiat rail when that tool is available.
+Use its matching canonical value as `bank_name`. If the lookup is unavailable
+or the rail publishes no directory, submit the human-provided bank name to
+`create_recipient`; Core remains the authority that validates or canonicalizes
+it. Never refuse a bank transfer or demand a QR solely because canonical bank
+lookup is unavailable.
 
-## Wallets
+For a curated fiat rail, collect a non-empty `holder_name` from the human in addition to the QR,
+bank details, or payment key. This is an unverified payout detail. Do not infer it from an EMV QR
+display label. For direct bank transfers, use the bank name returned by
+`get_supported_bank_names` when available, otherwise let `create_recipient`
+validate the human-provided name. QR-derived bank metadata is separate.
 
-Onboarding creates the bound Privy wallet as the default crypto recipient.
-Older installations may receive this record as a backfill when no crypto
-recipient exists. Recipients are human-owner scoped, so sibling installations
-may see the same record. Reuse it only when its chain and address match the
-active wallet from `list_wallets`, instead of creating a duplicate.
+When the human sends recipient information through chat as an image, raw QR
+payload, pasted bank text, account/holder details, or structured bank data,
+call `create_recipient` before `create_payment`. Use the
+returned `recipient_id` or canonical `recipient_fields`; do not manually copy
+unvalidated image/QR fields directly into a payment request.
 
-For an on-ramp to the shared wallet, call `list_wallets` and use the active
-wallet address for the reviewed asset chain (for example, World Chain USDC or
-BNB Smart Chain USDT). Never request its private key or substitute a chain.
+For local stdio, an image may use an absolute `image.path`. Remote clients use
+`image.data_base64`. The image must contain a readable QR. If it is a text-only
+screenshot, pass the visible details as `pasted_text` or `bank_info`; OCR is not
+implemented.
 
-On remote HTTP/OAuth, call `get_account_reference` for a top-up to the owner's
-AgentBank balance. The returned payment instruction supplies the deposit
-details; never ask the human for a wallet address or substitute the local
-`list_wallets` workflow.
+If `create_recipient` returns `information_required`, ask only for the listed
+missing or invalid fields and retry with the same request ID only if the payload
+is unchanged. Use a new request ID after adding or changing fields.
 
-Call `get_wallet_balances` before a crypto deposit or swap instruction. Include
-the native balance because a non-AgentKit-verified Privy EOA pays its own gas.
+On success, use either the returned `recipient_id` or canonical
+`recipient_fields` only in `create_payment.destination`.
 
-`get_token_allowance` reads allowance. `approve_token` is a compatibility
-utility and is not part of the normal payment flow; Core performs exact
-approval when required by `execute_payment_instruction`.
+Use `update_recipient` only after the human confirms the replacement fields.
+It creates a replacement record; it does not edit or revoke the old record.
 
-`get_transaction_receipt` can resolve a wallet submission, but cannot make a
-payment successful. Continue to trust `get_payment`.
+For a top-up into the user's own AgentBank balance: on local stdio, call
+`list_wallets` and use the active wallet address for the dollar balance as the
+crypto recipient. On hosted OAuth, call `get_account_reference`; the top-up payment's
+funding instruction returns the deposit details itself, so never ask the human
+for an address. Never ask for a private key.
+
