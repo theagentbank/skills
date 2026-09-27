@@ -130,6 +130,18 @@ test('fixture: duplicate headings and pointer-shaped backend lines are rejected'
   );
 });
 
+test('fixture: non-spec frontmatter keys and a mismatched name fail the import', async () => {
+  const { backend, layout } = await fixture();
+  assert.throws(
+    () => generate({ backend: backend.replace('---\n\n#', 'version: 1\n---\n\n#'), layout, packaging, version: '1.0.0' }),
+    /outside the Agent Skills specification: version/,
+  );
+  assert.throws(
+    () => generate({ backend: backend.replace('name: mini-skill', 'name: other-skill'), layout, packaging, version: '1.0.0' }),
+    /must equal the skill folder "mini-skill"/,
+  );
+});
+
 test('fixture: importer CLI writes, stays idempotent, and --check detects hand edits', async (context) => {
   const repo = await mkdtemp(path.join(os.tmpdir(), 'agentbank-import-'));
   context.after(() => rm(repo, { recursive: true, force: true }));

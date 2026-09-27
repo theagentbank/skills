@@ -11,6 +11,16 @@ import { parseDocument } from 'yaml';
 
 const HEADING = /^## (.+?)[ \t]*$/;
 const FENCE = /^[ \t]{0,3}(```|~~~)/;
+// https://agentskills.io/specification frontmatter fields.
+export const SPEC_FRONTMATTER_KEYS = [
+  'name',
+  'description',
+  'license',
+  'compatibility',
+  'metadata',
+  'allowed-tools',
+];
+
 const POINTER = /^Read \[([^\]\n]+)\]\(references\/\1\) for ((?:"[^"\n]*"(?:, )?)+)\.$/;
 
 export function sha256(value) {
@@ -129,7 +139,29 @@ export function generate({ backend, layout, packaging, version }) {
   if (parsed.errors.length) {
     throw new Error(`The backend frontmatter is invalid YAML: ${parsed.errors[0].message}`);
   }
-  const backendKeys = Object.keys(parsed.toJS() ?? {});
+  const backendFrontmatter = parsed.toJS() ?? {};
+  const backendKeys = Object.keys(backendFrontmatter);
+  const nonSpec = backendKeys.filter((key) => !SPEC_FRONTMATTER_KEYS.includes(key));
+  if (nonSpec.length) {
+    throw new Error(
+      `The backend frontmatter has keys outside the Agent Skills specification: ${nonSpec.join(', ')}`,
+    );
+  }
+  if (backendFrontmatter.name !== layout.skill) {
+    throw new Error(
+      `The backend skill name "${backendFrontmatter.name}" must equal the skill folder "${layout.skill}"`,
+    );
+  }
+  if (
+    typeof backendFrontmatter.description !== 'string' ||
+    backendFrontmatter.description.length < 1 ||
+    backendFrontmatter.description.length > 1024
+  ) {
+    throw new Error('The backend skill description must contain 1-1024 characters');
+  }
+  if ('allowed-tools' in backendFrontmatter && typeof backendFrontmatter['allowed-tools'] !== 'string') {
+    throw new Error('The backend allowed-tools value must be a space-separated string');
+  }
   const { preamble, sections } = parseSections(body, 'The backend skill');
 
   for (const line of lines(backend)) {

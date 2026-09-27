@@ -7,7 +7,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseDocument } from 'yaml';
 import { loadConfig, readGenerated, renderLegacy } from './legacy.mjs';
-import { generate, sha256 } from './skill-layout.mjs';
+import { generate, sha256, SPEC_FRONTMATTER_KEYS } from './skill-layout.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const execFileAsync = promisify(execFile);
@@ -150,6 +150,36 @@ if (properties) {
     Object.values(properties.metadata ?? {}).some((value) => typeof value !== 'string')
   ) {
     errors.push('Skill metadata values must all be strings');
+  }
+}
+if (properties) {
+  for (const key of Object.keys(properties)) {
+    if (!SPEC_FRONTMATTER_KEYS.includes(key)) {
+      errors.push(`SKILL.md frontmatter key "${key}" is not in the Agent Skills specification`);
+    }
+  }
+  if ('allowed-tools' in properties && typeof properties['allowed-tools'] !== 'string') {
+    errors.push('SKILL.md allowed-tools must be a space-separated string');
+  }
+}
+// Agent Skills layout: only standard entries in the skill folder, and
+// references one level deep with no further local links (no nested chains).
+const standardEntries = new Set(['SKILL.md', 'references', 'scripts', 'agents', 'assets']);
+for (const entry of await readdir(skillRoot)) {
+  if (!standardEntries.has(entry)) {
+    errors.push(`skills/agentbank-pay/${entry} is not a standard Agent Skills entry`);
+  }
+}
+for (const entry of await readdir(path.join(skillRoot, 'references'), { withFileTypes: true })) {
+  if (!entry.isFile() || !entry.name.endsWith('.md')) {
+    errors.push(`skills/agentbank-pay/references/${entry.name} must be a flat Markdown file`);
+    continue;
+  }
+  const text = await readFile(path.join(skillRoot, 'references', entry.name), 'utf8');
+  for (const match of text.matchAll(/\[[^\]]+\]\(([^)]+)\)/g)) {
+    if (!/^(?:https?:|mailto:|#)/.test(match[1].trim())) {
+      errors.push(`references/${entry.name} links a local file (${match[1]}); keep references one level deep`);
+    }
   }
 }
 if (skill.split(/\r?\n/).length > 500) {
