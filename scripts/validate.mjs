@@ -6,16 +6,15 @@ import { promisify } from 'node:util';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseDocument } from 'yaml';
-import {
-  normalizeLineEndings,
-  REFERENCE_FILES,
-  renderLegacy,
-} from './legacy.mjs';
+import { loadConfig, readGenerated, renderLegacy } from './legacy.mjs';
+import { generate, sha256 } from './skill-layout.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const execFileAsync = promisify(execFile);
 const skillRoot = path.join(root, 'skills', 'agentbank-pay');
 const errors = [];
+const { layout, packaging, packageJson: configPackage, marker: syncMarker } = await loadConfig(root);
+const REFERENCE_FILES = Object.keys(layout.references);
 const required = [
   'README.md',
   'CHANGELOG.md',
@@ -24,11 +23,16 @@ const required = [
   'SECURITY.md',
   'SUPPORT.md',
   'protocol-core-sync.json',
+  'skill-layout.json',
+  'packaging.json',
+  'dist/agentbank-pay/SKILL.md',
   'skills/agentbank-pay/SKILL.md',
   'skills/agentbank-pay/agents/openai.yaml',
   'skills/agentbank-pay/scripts/setup-mcp.mjs',
   'scripts/check-protocol-drift.mjs',
   'scripts/check-public-skill.mjs',
+  'scripts/import-backend-skill.mjs',
+  'scripts/skill-layout.mjs',
   'scripts/smoke-install.mjs',
   'scripts/smoke-mcp.mjs',
   ...REFERENCE_FILES.map((file) => `skills/agentbank-pay/references/${file}`),
@@ -182,27 +186,30 @@ if (!readme.includes('npx skills add theagentbank/skills')) {
   errors.push('README.md must contain the public installation command');
 }
 
-try {
-  const marker = JSON.parse(
-    await readFile(path.join(root, 'protocol-core-sync.json'), 'utf8'),
-  );
-  if (!/^[0-9a-f]{40}$/.test(marker.source_commit ?? '')) {
-    errors.push('protocol-core-sync.json source_commit must be a full Git commit');
-  }
-  if (Number.isNaN(Date.parse(marker.source_committed_at))) {
-    errors.push('protocol-core-sync.json source_committed_at must be an ISO timestamp');
-  }
-  if (marker.mcp_package !== 'agent-bank-mcp') {
-    errors.push('protocol-core-sync.json mcp_package must be agent-bank-mcp');
-  }
-  if (!/^\d+\.\d+\.\d+$/.test(marker.mcp_version ?? '')) {
-    errors.push('protocol-core-sync.json mcp_version must be an exact stable version');
-  }
-  if (!Number.isInteger(marker.mcp_tool_count) || marker.mcp_tool_count < 1) {
-    errors.push('protocol-core-sync.json mcp_tool_count must be a positive integer');
-  }
-} catch (error) {
-  errors.push(`protocol-core-sync.json is invalid: ${error.message}`);
+const marker = syncMarker;
+if (!/^https:\/\/\S+$/.test(marker.source_url ?? '')) {
+  errors.push('protocol-core-sync.json source_url must be the https backend skill URL');
+}
+if (!/^[0-9a-f]{64}$/.test(marker.source_sha256 ?? '')) {
+  errors.push('protocol-core-sync.json source_sha256 must be a sha256 hex digest');
+}
+if (Number.isNaN(Date.parse(marker.imported_at))) {
+  errors.push('protocol-core-sync.json imported_at must be an ISO timestamp');
+}
+if (
+  !Array.isArray(marker.packaging_keys_added) ||
+  marker.packaging_keys_added.some((key) => !['license', 'compatibility', 'metadata'].includes(key))
+) {
+  errors.push('protocol-core-sync.json packaging_keys_added may only name license, compatibility, metadata');
+}
+if (marker.mcp_package !== 'agent-bank-mcp') {
+  errors.push('protocol-core-sync.json mcp_package must be agent-bank-mcp');
+}
+if (!/^\d+\.\d+\.\d+$/.test(marker.mcp_version ?? '')) {
+  errors.push('protocol-core-sync.json mcp_version must be an exact stable version');
+}
+if (!Number.isInteger(marker.mcp_tool_count) || marker.mcp_tool_count < 1) {
+  errors.push('protocol-core-sync.json mcp_tool_count must be a positive integer');
 }
 
 const canonicalWorkflow = [skill];
@@ -253,9 +260,9 @@ if (process.platform !== 'win32') {
     'scripts/check-protocol-drift.mjs',
     'scripts/check-public-skill.mjs',
     'scripts/export-legacy-skill.mjs',
+    'scripts/import-backend-skill.mjs',
     'scripts/smoke-install.mjs',
     'scripts/smoke-mcp.mjs',
-    'scripts/sync-protocol-core.mjs',
     'scripts/validate.mjs',
     'skills/agentbank-pay/scripts/setup-mcp.mjs',
   ]) {
@@ -264,33 +271,45 @@ if (process.platform !== 'win32') {
   }
 }
 
-let trackedLegacy = null;
+// The portable artifact is the backend file byte for byte (no line limit).
+let backend = null;
 try {
-  trackedLegacy = await readFile(
-    path.join(root, 'dist', 'agentbank-pay', 'SKILL.md'),
-    'utf8',
-  );
-} catch (error) {
-  if (error.code === 'ENOENT') {
-    errors.push('Missing legacy artifact; run npm run export:legacy');
-  } else {
-    errors.push(`Unable to read legacy artifact: ${error.message}`);
+  const bytes = await readFile(path.join(root, 'dist', 'agentbank-pay', 'SKILL.md'));
+  backend = bytes.toString('utf8');
+  if (sha256(bytes) !== marker.source_sha256) {
+    errors.push('dist/agentbank-pay/SKILL.md does not match the recorded backend source_sha256; run npm run import:backend');
   }
+} catch (error) {
+  errors.push(`Unable to read dist/agentbank-pay/SKILL.md: ${error.message}`);
 }
-if (trackedLegacy !== null) {
+if (backend !== null) {
+  // Offline equivalent of `import-backend-skill.mjs --check`: the generated
+  // folder must be exactly what the importer produces from the recorded bytes.
   try {
-    const renderedLegacy = await renderLegacy(root);
-    if (renderedLegacy.split(/\r?\n/).length > 500) {
-      errors.push('Public compatibility artifact exceeds the 500-line recommendation');
+    const expected = generate({ backend, layout, packaging, version: configPackage.version });
+    const actual = await readGenerated(root, layout);
+    if (actual.skill !== expected.skill) {
+      errors.push('skills/agentbank-pay/SKILL.md is not the generated output; run npm run import:backend');
     }
-    if (renderedLegacy.includes('<skill-directory>') || /\]\(references\//.test(renderedLegacy)) {
-      errors.push('Public compatibility artifact contains unavailable local dependencies');
+    for (const [file, text] of Object.entries(expected.references)) {
+      if (actual.references[file] !== text) {
+        errors.push(`skills/agentbank-pay/references/${file} is not the generated output; run npm run import:backend`);
+      }
     }
-    if (normalizeLineEndings(trackedLegacy) !== renderedLegacy) {
-      errors.push('Legacy artifact drifted; run npm run export:legacy');
+    if (JSON.stringify(expected.addedKeys) !== JSON.stringify(marker.packaging_keys_added)) {
+      errors.push('protocol-core-sync.json packaging_keys_added does not match the generated frontmatter');
+    }
+    const extra = (await readdir(path.join(skillRoot, 'references'))).filter(
+      (file) => !REFERENCE_FILES.includes(file),
+    );
+    for (const file of extra) {
+      errors.push(`skills/agentbank-pay/references/${file} is not in skill-layout.json`);
+    }
+    if ((await renderLegacy(root)) !== backend) {
+      errors.push('Reassembling the generated skill folder does not reproduce the backend bytes');
     }
   } catch (error) {
-    errors.push(`Unable to render legacy artifact: ${error.message}`);
+    errors.push(`Unable to verify generated skill files: ${error.message}`);
   }
 }
 
