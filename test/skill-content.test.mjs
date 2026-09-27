@@ -213,3 +213,18 @@ test('tracks the 0.1.32 estimate, discovery, and funding-timeout contract', asyn
   assert.match(recovery, /`status=funding_timeout`/);
   assert.match(recovery, /Do not retry\s+or reopen that payment instruction/);
 });
+
+test('keeps local and hosted payment surfaces distinct', async () => {
+  const [skill, payments, recipients] = await Promise.all([
+    read('skills/agentbank-pay/SKILL.md'),
+    read('skills/agentbank-pay/references/payments.md'),
+    read('skills/agentbank-pay/references/recipients-wallets.md'),
+  ]);
+
+  assert.match(skill, /Remote HTTP\/OAuth omits\s+those local tools/);
+  assert.match(skill, /`execute_payment_instruction` is local stdio only/);
+  assert.match(skill, /pay_within_spending_limit/);
+  assert.match(payments, /`spending_limit_available=true`/);
+  assert.match(payments, /Never use a spending limit for\s+fiat funding or a swap/);
+  assert.match(recipients, /call `get_account_reference`/);
+});

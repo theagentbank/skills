@@ -4,6 +4,19 @@ All notable user-visible changes are recorded here.
 
 This project follows [Semantic Versioning](https://semver.org/).
 
+## [1.7.0] - 2026-09-22
+
+### Added
+
+- Added remote HTTP/OAuth guidance for consumer presentation, hosted funding
+  links, account references, and spending-limit funding.
+
+### Changed
+
+- Synced the backend development baseline through its public x402 directory
+  and hosted payment-presentation changes while preserving the audited local
+  `agent-bank-mcp@0.1.33` 45-tool contract.
+
 ## [1.6.0] - 2026-09-17
 
 ### Changed

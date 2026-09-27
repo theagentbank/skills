@@ -18,6 +18,23 @@ highest_success_rate
 Use `balanced` by default. Do not silently split an amount, switch chains,
 change exactness, or change recipients.
 
+## Hosted OAuth presentation
+
+On a remote HTTP/OAuth surface, the connected owner and server-returned
+consumer presentation are authoritative. Use `display.summary`, recipient,
+fee, rate, and validity fields when provided; do not recite raw assets, IDs,
+or wallet details unless the human asks for technical details. For bank or QR
+funding, share the returned AgentBank payment link only when a card is not
+rendered; that link is the authoritative funding page.
+
+For a hosted crypto-deposit instruction, read its `funding_options`. Offer
+`pay_within_spending_limit` only when `spending_limit_available=true`, then
+wait for a new explicit choice between that option and the payment link. Use the
+current payment ID, instruction ID, returned account/limit references, a stable
+request ID, and `confirmed_by_user=true`. If it is unavailable, preserve the
+manual link and do not call the payment blocked. Never use a spending limit for
+fiat funding or a swap.
+
 Use structured assets:
 
 ```json
@@ -186,6 +203,10 @@ wait for the human, and poll `get_payment` until ready.
 Use `action_url` or `presentation_url` for human-executed fiat funding. Show the
 exact amount and expiry, ask the human to pay, and poll `get_payment`. Do not
 call `execute_payment_instruction` for fiat funding.
+
+On hosted OAuth, the instruction card or returned payment link owns fiat and QR
+funding. Do not duplicate the link when the card is visible, execute a local
+wallet instruction, or offer spending-limit funding for either case.
 
 For a direct crypto deposit:
 

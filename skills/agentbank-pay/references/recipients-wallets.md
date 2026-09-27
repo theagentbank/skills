@@ -52,6 +52,11 @@ For an on-ramp to the shared wallet, call `list_wallets` and use the active
 wallet address for the reviewed asset chain (for example, World Chain USDC or
 BNB Smart Chain USDT). Never request its private key or substitute a chain.
 
+On remote HTTP/OAuth, call `get_account_reference` for a top-up to the owner's
+AgentBank balance. The returned payment instruction supplies the deposit
+details; never ask the human for a wallet address or substitute the local
+`list_wallets` workflow.
+
 Call `get_wallet_balances` before a crypto deposit or swap instruction. Include
 the native balance because a non-AgentKit-verified Privy EOA pays its own gas.
 

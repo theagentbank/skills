@@ -5,16 +5,20 @@ license: MIT
 compatibility: Designed for Codex, Claude Code, and Hermes. Installation requires Node.js 22.20+ and internet access.
 metadata:
   author: theagentbank
-  version: "1.6.0"
+  version: "1.7.0"
 ---
 
 # AgentBank Pay
 
 Use the AgentBank MCP as the authority for onboarding, approvals, routes, payment instructions, transaction verification, and terminal payment state. Never replace its tools with direct HTTP requests or locally constructed protocol payloads.
 
+## MCP surface
+
+First identify the connected surface. Local stdio exposes `begin_agent_onboarding` and `execute_payment_instruction`; it uses this device's installation and onboarding-bound wallet. Remote HTTP/OAuth omits those local tools and already identifies the human through the connected OAuth session. On a remote surface, never install a local MCP, begin local onboarding, or ask for local wallet setup; call `whoami` and follow the remote tools and server-rendered presentation returned by that connection.
+
 ## Availability gate
 
-Check whether the active client exposes `whoami`, `get_instructions`, and `begin_agent_onboarding`.
+Check whether the active client exposes `whoami` and `get_instructions`. `begin_agent_onboarding` identifies a local stdio surface; its absence alone does not make a remote HTTP/OAuth connection unavailable.
 
 If the tools are loaded, call `whoami` immediately and preserve the user's original task.
 
@@ -56,6 +60,8 @@ Run onboarding only through the configured AgentBank MCP server in the active cl
 - Follow the payment's returned approval status. Never infer World ID behavior from a fixed threshold or route composition.
 - Use payment plans only for multiple independently settled payments that the human wants to review together under one approval. Review every plan item before submission; a draft plan does not move funds.
 - Treat `status=expired` with `failure.code=payment_expired` as terminal. Obtain a fresh estimate and confirmation, then create a new payment.
+- On remote HTTP/OAuth, use the returned consumer `display` content and presentation cards or links; do not repeat raw asset objects, IDs, or wallet details unless the human explicitly asks for technical details.
+- `execute_payment_instruction` is local stdio only. On remote HTTP/OAuth, use `pay_within_spending_limit` only after a new explicit human choice to fund the current crypto instruction within its returned spending limit; never use it for fiat funding or a swap.
 - Never expose partner identity or use hidden primitive intent, route, approval, settlement, or raw-swap mutations.
 
 ## Runtime guidance
@@ -178,6 +184,12 @@ highest_success_rate
 
 Use `balanced` by default. Do not silently split an amount, switch chains, change exactness, or change recipients.
 
+## Hosted OAuth presentation
+
+On a remote HTTP/OAuth surface, the connected owner and server-returned consumer presentation are authoritative. Use `display.summary`, recipient, fee, rate, and validity fields when provided; do not recite raw assets, IDs, or wallet details unless the human asks for technical details. For bank or QR funding, share the returned AgentBank payment link only when a card is not rendered; that link is the authoritative funding page.
+
+For a hosted crypto-deposit instruction, read its `funding_options`. Offer `pay_within_spending_limit` only when `spending_limit_available=true`, then wait for a new explicit choice between that option and the payment link. Use the current payment ID, instruction ID, returned account/limit references, a stable request ID, and `confirmed_by_user=true`. If it is unavailable, preserve the manual link and do not call the payment blocked. Never use a spending limit for fiat funding or a swap.
+
 Use structured assets:
 
 ```json
@@ -272,6 +284,8 @@ Core applies the installation threshold only where current payment rules make it
 
 Use `action_url` or `presentation_url` for human-executed fiat funding. Show the exact amount and expiry, ask the human to pay, and poll `get_payment`. Do not call `execute_payment_instruction` for fiat funding.
 
+On hosted OAuth, the instruction card or returned payment link owns fiat and QR funding. Do not duplicate the link when the card is visible, execute a local wallet instruction, or offer spending-limit funding for either case.
+
 For a direct crypto deposit:
 
 1. Show exact chain, asset, amount, full destination, memo/reference, and expiry.
@@ -327,6 +341,8 @@ Use `update_recipient` only after the human confirms replacement fields. Pass `p
 Onboarding creates the bound Privy wallet as the default crypto recipient. Older installations may receive this record as a backfill when no crypto recipient exists. Recipients are human-owner scoped, so sibling installations may see the same record. Reuse it only when its chain and address match the active wallet from `list_wallets`, instead of creating a duplicate.
 
 For an on-ramp to the shared wallet, call `list_wallets` and use the active wallet address for the reviewed asset chain (for example, World Chain USDC or BNB Smart Chain USDT). Never request its private key or substitute a chain.
+
+On remote HTTP/OAuth, call `get_account_reference` for a top-up to the owner's AgentBank balance. The returned payment instruction supplies the deposit details; never ask the human for a wallet address or substitute the local `list_wallets` workflow.
 
 Call `get_wallet_balances` before a crypto deposit or swap instruction. Include the native balance because a non-AgentKit-verified Privy EOA pays its own gas.
 

@@ -5,7 +5,7 @@ license: MIT
 compatibility: Designed for Codex, Claude Code, and Hermes. Installation requires Node.js 22.20+ and internet access.
 metadata:
   author: theagentbank
-  version: "1.6.0"
+  version: "1.7.0"
 ---
 
 # AgentBank Pay
@@ -15,10 +15,21 @@ payment instructions, transaction verification, and terminal payment state.
 Never replace its tools with direct HTTP requests or locally constructed
 protocol payloads.
 
+## MCP surface
+
+First identify the connected surface. Local stdio exposes
+`begin_agent_onboarding` and `execute_payment_instruction`; it uses this
+device's installation and onboarding-bound wallet. Remote HTTP/OAuth omits
+those local tools and already identifies the human through the connected OAuth
+session. On a remote surface, never install a local MCP, begin local
+onboarding, or ask for local wallet setup; call `whoami` and follow the
+remote tools and server-rendered presentation returned by that connection.
+
 ## Availability gate
 
-Check whether the active client exposes `whoami`, `get_instructions`, and
-`begin_agent_onboarding`.
+Check whether the active client exposes `whoami` and `get_instructions`.
+`begin_agent_onboarding` identifies a local stdio surface; its absence alone
+does not make a remote HTTP/OAuth connection unavailable.
 
 If the tools are loaded, call `whoami` immediately and preserve the user's
 original task.
@@ -102,6 +113,13 @@ one-time restart.
   before submission; a draft plan does not move funds.
 - Treat `status=expired` with `failure.code=payment_expired` as terminal. Obtain
   a fresh estimate and confirmation, then create a new payment.
+- On remote HTTP/OAuth, use the returned consumer `display` content and
+  presentation cards or links; do not repeat raw asset objects, IDs, or wallet
+  details unless the human explicitly asks for technical details.
+- `execute_payment_instruction` is local stdio only. On remote HTTP/OAuth, use
+  `pay_within_spending_limit` only after a new explicit human choice to fund the
+  current crypto instruction within its returned spending limit; never use it
+  for fiat funding or a swap.
 - Never expose partner identity or use hidden primitive intent, route,
   approval, settlement, or raw-swap mutations.
 
@@ -150,5 +168,6 @@ Payments: create_payment, continue_payment, execute_payment_instruction, get_pay
 External x402: estimate_x402_outbound_payment, confirm_x402_outbound_payment, get_x402_outbound_payment, list_x402_outbound_payments
 Recipients: list_recipients, get_recipient, create_recipient, update_recipient
 Wallets: list_wallets, get_wallet_balances, get_token_allowance, approve_token, get_transaction_receipt
+Hosted OAuth only: get_balance, get_account_reference, set_spending_limit, pay_within_spending_limit, show_payment_approval, get_payment_instruction, show_payment_progress
 Guidance: get_instructions
 ```
