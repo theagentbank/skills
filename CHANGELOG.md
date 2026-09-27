@@ -4,6 +4,17 @@ All notable user-visible changes are recorded here.
 
 This project follows [Semantic Versioning](https://semver.org/).
 
+## [1.8.0] - 2026-09-27
+
+### Added
+
+- Added the audited `agent-bank-mcp@0.1.37` contract with the public
+  `discover_x402_services` catalog tool.
+
+### Changed
+
+- Updated the backend synchronization marker to Protocol Core `0725a86`.
+
 ## [1.7.0] - 2026-09-22
 
 ### Added

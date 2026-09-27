@@ -5,7 +5,7 @@ license: MIT
 compatibility: Designed for Codex, Claude Code, and Hermes. Installation requires Node.js 22.20+ and internet access.
 metadata:
   author: theagentbank
-  version: "1.7.0"
+  version: "1.8.0"
 ---
 
 # AgentBank Pay
@@ -165,7 +165,7 @@ Identity: check_verification_status, do_kyc, get_verification_guidance, verify_a
 Discovery: list_currencies, get_supported_payment_capabilities, list_quote_book_pairs, browse_quote_book, estimate_payment
 Plans: create_payment_plan, review_payment_plan, list_payment_plans, submit_payment_plan, cancel_payment_plan
 Payments: create_payment, continue_payment, execute_payment_instruction, get_payment, list_payments, cancel_payment, correct_payment_recipient
-External x402: estimate_x402_outbound_payment, confirm_x402_outbound_payment, get_x402_outbound_payment, list_x402_outbound_payments
+External x402: discover_x402_services, estimate_x402_outbound_payment, confirm_x402_outbound_payment, get_x402_outbound_payment, list_x402_outbound_payments
 Recipients: list_recipients, get_recipient, create_recipient, update_recipient
 Wallets: list_wallets, get_wallet_balances, get_token_allowance, approve_token, get_transaction_receipt
 Hosted OAuth only: get_balance, get_account_reference, set_spending_limit, pay_within_spending_limit, show_payment_approval, get_payment_instruction, show_payment_progress

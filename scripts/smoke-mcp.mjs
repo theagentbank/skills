@@ -82,6 +82,7 @@ const x402ExpectedTools = [
 const latestExpectedTools = x402ExpectedTools.filter(
   (tool) => tool !== 'get_ramp_quote',
 );
+const mcp037ExpectedTools = [...latestExpectedTools, 'discover_x402_services'];
 const expectedToolsByVersion = new Map([
   ['0.1.24', baseExpectedTools],
   ['0.1.25', [...baseExpectedTools, 'get_supported_bank_names']],
@@ -90,6 +91,7 @@ const expectedToolsByVersion = new Map([
   ['0.1.28', x402ExpectedTools],
   ['0.1.32', latestExpectedTools],
   ['0.1.33', latestExpectedTools],
+  ['0.1.37', mcp037ExpectedTools],
 ]);
 let stderr = '';
 let initialized = false;
