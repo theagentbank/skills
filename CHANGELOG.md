@@ -4,6 +4,33 @@ All notable user-visible changes are recorded here.
 
 This project follows [Semantic Versioning](https://semver.org/).
 
+## [2.0.0] - 2026-09-27
+
+### Changed
+
+- **Breaking:** the skill is now generated from the AgentBank backend file
+  published at https://useagentbank.com/SKILL.md (served from
+  https://protocol.agentbank.world/SKILL.md) instead of being hand-written here.
+  `skills/agentbank-pay/SKILL.md` keeps the backend core sections in place;
+  other sections move unchanged into `references/` (new `hosted.md` and
+  `x402.md`) behind generated pointer lines, per `skill-layout.json`.
+- `dist/agentbank-pay/SKILL.md` is now the backend file byte for byte and is no
+  longer limited to 500 lines.
+- `protocol-core-sync.json` records `source_url`, `source_sha256`, and
+  `imported_at` instead of a protocol-core commit.
+- `check:public-skill` compares https://useagentbank.com/SKILL.md with the
+  imported bytes; the manifest check is gone.
+
+### Added
+
+- `npm run import:backend` / `check:backend` and an hourly import workflow that
+  opens a pull request when the backend changes.
+
+### Removed
+
+- The reverse sync flows to protocol-core and the landing page
+  (`sync:protocol-core`, `sync:landing-page`, and the landing publish workflow).
+
 ## [1.8.0] - 2026-09-27
 
 ### Added
