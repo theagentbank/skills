@@ -43,8 +43,10 @@ that file for `npx skills add theagentbank/skills`:
 generated files here will be overwritten by the next import. The
 [Import backend skill](.github/workflows/import-backend-skill.yml) workflow
 checks the backend hourly (and on `repository_dispatch` type
-`backend-skill-updated`) and opens a pull request from
-`automation/import-backend-skill` when it changes.
+`backend-skill-updated`), and when it changes opens a pull request from
+`automation/import-backend-skill` and merges it once the import, `npm run check`
+and the byte-for-byte backend check pass. Set the repository variable
+`AGENTBANK_AUTO_MERGE_IMPORT` to `false` to leave the pull request open instead.
 
 ## Requirements
 

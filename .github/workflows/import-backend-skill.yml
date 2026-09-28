@@ -56,3 +56,20 @@ jobs:
             gh pr create --base main --head "$BRANCH" \
               --title "chore: import backend skill ${sha:0:12}" --body "$body"
           fi
+
+      # The import, `npm run check` and the byte-for-byte backend check below all
+      # passed in this run, so the PR is merged here. PRs opened with GITHUB_TOKEN
+      # do not trigger the Validate workflow, so waiting for its checks would never
+      # finish. Set the repository variable AGENTBANK_AUTO_MERGE_IMPORT to "false"
+      # to go back to opening the PR only.
+      - name: Merge the import pull request
+        if: ${{ vars.AGENTBANK_AUTO_MERGE_IMPORT != 'false' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if ! gh pr view "$BRANCH" --json state --jq .state 2>/dev/null | grep -q OPEN; then
+            echo "No open import pull request to merge."
+            exit 0
+          fi
+          node scripts/import-backend-skill.mjs --check
+          gh pr merge "$BRANCH" --merge --delete-branch
