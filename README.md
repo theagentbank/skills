@@ -41,7 +41,7 @@ that file for `npx skills add theagentbank/skills`:
 
 **Edits to skill wording must go to the backend.** Pull requests that edit the
 generated files here will be overwritten by the next import. The
-[Import backend skill](.github/workflows/import-backend-skill.yml) workflow
+Import backend skill workflow (`.github/workflows/import-backend-skill.yml`, staged in [docs/ci](docs/ci/README.md) until a maintainer moves it)
 checks the backend hourly (and on `repository_dispatch` type
 `backend-skill-updated`) and opens a pull request from
 `automation/import-backend-skill` when it changes.
