@@ -5,7 +5,7 @@ license: MIT
 compatibility: "Local MCP clients (Codex, Claude Code, Claude Desktop, OpenClaw, Hermes) need Node.js 22.20+; hosted clients (ChatGPT, Claude, Meta Muse, Poke) connect to the HTTPS MCP server with OAuth."
 metadata:
   author: "theagentbank"
-  version: "2.0.1"
+  version: "2.0.2"
 ---
 
 # AgentBank Pay

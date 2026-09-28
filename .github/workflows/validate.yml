@@ -39,6 +39,22 @@ jobs:
       - run: npm run check
       - run: npm run smoke:install
 
+  backend-source:
+    name: Backend skill source
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      # Set to 1 (for example as a repository variable) to skip in offline CI.
+      AGENTBANK_SKIP_BACKEND_CHECK: ${{ vars.AGENTBANK_SKIP_BACKEND_CHECK || '' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.20.0
+          cache: npm
+      - run: npm ci
+      - run: node scripts/import-backend-skill.mjs --check
+
   live-mcp:
     name: Published MCP contract
     runs-on: ubuntu-latest
