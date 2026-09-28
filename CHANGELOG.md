@@ -4,6 +4,11 @@ All notable user-visible changes are recorded here.
 
 This project follows [Semantic Versioning](https://semver.org/).
 
+## 2.0.2 - 2026-09-29
+
+- Installed the hourly backend import workflow and the updated validate workflow from `docs/ci/`.
+- Removed the retired `publish-landing-skill` workflow; the landing site serves the skill live from the backend.
+
 ## 2.0.1 - 2026-09-28
 
 - Import from https://protocol.useagentbank.com/SKILL.md; agentbank.world is retired.
