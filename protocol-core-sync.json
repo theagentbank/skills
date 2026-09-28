@@ -11,6 +11,6 @@
   "source_branch": "development/1.0.0",
   "source_path": "mcp-agent-server/skills/agentbank-pay/SKILL.md",
   "mcp_package": "agent-bank-mcp",
-  "mcp_version": "0.1.37",
+  "mcp_version": "0.1.38",
   "mcp_tool_count": 46
 }
