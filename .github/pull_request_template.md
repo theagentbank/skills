@@ -15,6 +15,6 @@
 - [ ] `npm run check`
 - [ ] `npm run smoke:install`
 - [ ] `npm run smoke:mcp` when MCP behavior changed
-- [ ] Generated compatibility artifact refreshed
+- [ ] Generated files come from `npm run import:backend` (no hand edits)
 - [ ] `CHANGELOG.md` updated for user-visible changes
 

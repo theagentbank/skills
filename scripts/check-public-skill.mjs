@@ -1,80 +1,42 @@
 #!/usr/bin/env node
 
-import { createHash } from 'node:crypto';
+// Verifies the public skill URL serves exactly the imported backend file
+// (dist/agentbank-pay/SKILL.md).
 
-const DEFAULT_SKILL_URL = 'https://agentbank.world/SKILL.md';
-const DEFAULT_MANIFEST_URL = 'https://agentbank.world/agentbank-pay.manifest.json';
+import { readFile } from 'node:fs/promises';
+import path from 'node:path';
+import { fileURLToPath, pathToFileURL } from 'node:url';
+import { sha256 } from './skill-layout.mjs';
 
-export function sha256(value) {
-  return createHash('sha256').update(value).digest('hex');
-}
+export { sha256 };
 
-export function validatePublicSkill(skill, manifest) {
+const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const DEFAULT_SKILL_URL = 'https://useagentbank.com/SKILL.md';
+
+export function comparePublicSkill(published, local) {
   const errors = [];
-  const lines = skill.split(/\r?\n/).length;
-
-  if (lines > 500) errors.push(`SKILL.md has ${lines} lines; maximum is 500`);
-  if (skill.includes('<skill-directory>')) {
-    errors.push('SKILL.md contains an unavailable local skill-directory placeholder');
+  const publishedSha = sha256(published);
+  const localSha = sha256(local);
+  if (!Buffer.from(published).equals(Buffer.from(local))) {
+    errors.push(
+      `Published SKILL.md (sha256 ${publishedSha}, ${published.length} bytes) differs from dist/agentbank-pay/SKILL.md (sha256 ${localSha}, ${local.length} bytes)`,
+    );
   }
-  if (/\]\(references\//.test(skill)) {
-    errors.push('SKILL.md contains unavailable relative reference links');
-  }
-  for (const snippet of [
-    'codex mcp get agentbank --json',
-    'codex mcp add agentbank -- npx -y agent-bank-mcp@latest',
-    'claude mcp add --scope user agentbank -- npx -y agent-bank-mcp@latest',
-    'recipient_requirements',
-    'create_payment_plan',
-    'failure.code=payment_expired',
-    'bank_name',
-    'estimate_x402_outbound_payment',
-    'USDT',
-    '"chain": "bsc"',
-    'After browser approval, call `whoami`, restart',
-    'CREDENTIAL_STORE_CORRUPT',
-    'call `relogin` once',
-    '## Detailed workflow references',
-  ]) {
-    if (!skill.includes(snippet)) errors.push(`SKILL.md is missing: ${snippet}`);
-  }
-
-  if (manifest.source !== 'https://github.com/theagentbank/skills') {
-    errors.push('Manifest source is incorrect');
-  }
-  if (manifest.skill !== 'agentbank-pay') errors.push('Manifest skill is incorrect');
-  if (!/^v\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?$/.test(manifest.release ?? '')) {
-    errors.push('Manifest release must be an immutable version label');
-  }
-  if (!/^[0-9a-f]{40}$/.test(manifest.sourceCommit ?? '')) {
-    errors.push('Manifest sourceCommit must be a full Git commit');
-  }
-  if (manifest.sha256 !== sha256(skill)) errors.push('Manifest sha256 does not match SKILL.md');
   return errors;
-}
-
-async function fetchText(url, expectedType) {
-  const response = await fetch(url);
-  if (!response.ok) throw new Error(`${url} returned HTTP ${response.status}`);
-  if (expectedType && !response.headers.get('content-type')?.includes(expectedType)) {
-    throw new Error(`${url} did not return ${expectedType}`);
-  }
-  return response.text();
 }
 
 async function main() {
   const skillUrl = process.argv[2] ?? DEFAULT_SKILL_URL;
-  const manifestUrl = process.argv[3] ?? DEFAULT_MANIFEST_URL;
-  const [skill, manifestText] = await Promise.all([
-    fetchText(skillUrl, 'text/markdown'),
-    fetchText(manifestUrl, 'application/json'),
-  ]);
-  const errors = validatePublicSkill(skill, JSON.parse(manifestText));
+  const response = await fetch(skillUrl, { signal: AbortSignal.timeout(30_000) });
+  if (!response.ok) throw new Error(`${skillUrl} returned HTTP ${response.status}`);
+  const published = Buffer.from(await response.arrayBuffer());
+  const local = await readFile(path.join(root, 'dist', 'agentbank-pay', 'SKILL.md'));
+  const errors = comparePublicSkill(published, local);
   if (errors.length) throw new Error(errors.join('\n- '));
-  process.stdout.write(`Public AgentBank skill verified: ${skillUrl}\n`);
+  process.stdout.write(`Public AgentBank skill verified: ${skillUrl} (sha256 ${sha256(local)})\n`);
 }
 
-if (import.meta.url === new URL(`file://${process.argv[1]}`).href) {
+if (process.argv[1] && import.meta.url === pathToFileURL(path.resolve(process.argv[1])).href) {
   main().catch((error) => {
     process.stderr.write(`- ${error.message}\n`);
     process.exitCode = 1;

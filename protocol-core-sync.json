@@ -1,10 +1,15 @@
 {
+  "source_url": "https://protocol.agentbank.world/SKILL.md",
+  "source_sha256": "8fb642a72ed7842b1590a916919855c799314132859a5a9ca492974f931c89e9",
+  "imported_at": "2026-09-27T18:30:37.449Z",
+  "packaging_keys_added": [
+    "license",
+    "compatibility",
+    "metadata"
+  ],
   "source_repository": "HumanFX/protocol-core",
   "source_branch": "development/1.0.0",
-  "source_commit": "61b4779c50595346a15dc4e359a2e21f7da0e4a1",
-  "source_committed_at": "2026-09-27T11:03:16+07:00",
-  "audit_baseline_commit": "c43410e",
-  "previous_skills_sync_commit": "e85e469bddc4753e441ef4bb6314a4b802886434",
+  "source_path": "mcp-agent-server/skills/agentbank-pay/SKILL.md",
   "mcp_package": "agent-bank-mcp",
   "mcp_version": "0.1.37",
   "mcp_tool_count": 46

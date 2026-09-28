@@ -1,173 +1,219 @@
 ---
 name: agentbank-pay
-description: Install, onboard, and use AgentBank's MCP for identity, payments, recipients, wallets, tracking, and safe recovery. Use when a user asks to set up AgentBank, onboard a new agent, send or receive money, manage an AgentBank wallet or recipient, or inspect/recover an AgentBank payment.
+description: Use the AgentBank MCP, local (Codex, Claude Code, Hermes) or hosted over OAuth (Meta Muse, Poke, ChatGPT, Claude, any agent that can call an HTTPS MCP server), for setup, identity, sending and collecting money, spending limits, recipients, tracking, x402 outbound payments, and safe recovery. Use when a person asks to set up AgentBank, send or receive money, check a balance or a payment, manage a recipient or spending limit, or recover a payment.
 license: MIT
-compatibility: Designed for Codex, Claude Code, and Hermes. Installation requires Node.js 22.20+ and internet access.
+compatibility: "Local MCP clients (Codex, Claude Code, Claude Desktop, OpenClaw, Hermes) need Node.js 22.20+; hosted clients (ChatGPT, Claude, Meta Muse, Poke) connect to the HTTPS MCP server with OAuth."
 metadata:
-  author: theagentbank
-  version: "1.8.0"
+  author: "theagentbank"
+  version: "2.0.0"
 ---
 
 # AgentBank Pay
 
-Use the AgentBank MCP as the authority for onboarding, approvals, routes,
-payment instructions, transaction verification, and terminal payment state.
-Never replace its tools with direct HTTP requests or locally constructed
-protocol payloads.
+## Choose the MCP surface first
 
-## MCP surface
+AgentBank is banking for AI agents. It connects agents to the financial rails
+people and businesses already use. With AgentBank, an agent can collect money
+locally, hold it, convert it, and send it anywhere in the world to any existing
+bank account, in the local currency.
 
-First identify the connected surface. Local stdio exposes
-`begin_agent_onboarding` and `execute_payment_instruction`; it uses this
-device's installation and onboarding-bound wallet. Remote HTTP/OAuth omits
-those local tools and already identifies the human through the connected OAuth
-session. On a remote surface, never install a local MCP, begin local
-onboarding, or ask for local wallet setup; call `whoami` and follow the
-remote tools and server-rendered presentation returned by that connection.
+Before any setup or payment action, identify how AgentBank is connected. Do not
+assume that every AgentBank MCP has local credentials or local wallet control.
+Call `tools/list` and read the tool names:
 
-## Availability gate
+- **Local stdio MCP:** `begin_agent_onboarding`,
+  `wait_for_agent_onboarding`, and `execute_payment_instruction` are available.
+  This surface uses a credential stored on the current device and can execute a
+  current crypto instruction through the agent's local wallet, a signing key
+  bound to this installation.
+- **Hosted MCP over OAuth** (`https://plugin.agentbank.world/mcp`): local
+  onboarding and executor tools are absent. OAuth already supplies the owner
+  context. It exposes `get_balance`, `set_spending_limit`,
+  `pay_within_spending_limit`, `get_account_reference`, `track_payments` and
+  the card tools `show_payment_approval`, `get_payment_instruction`,
+  `show_payment_progress`. **Read the "Hosted surface" section next and skip
+  every section marked local.**
 
-Check whether the active client exposes `whoami` and `get_instructions`.
-`begin_agent_onboarding` identifies a local stdio surface; its absence alone
-does not make a remote HTTP/OAuth connection unavailable.
+If the surface is unclear, inspect the available tools before proceeding:
+`begin_agent_onboarding` is a strong local stdio signal; hosted approval,
+instruction, progress, or spending-limit tools are strong remote OAuth signals.
+Never invent credentials or fall back to direct HTTP requests.
 
-If the tools are loaded, call `whoami` immediately and preserve the user's
-original task.
+**Hosted behavior:** do not install the local MCP, start local onboarding,
+call `relogin`/`revoke_agent`, or ask the human for any local device or wallet
+setup. Call `whoami` and proceed in the OAuth owner's context.
+Use the rendered approval and funding cards. After a hosted funding card,
+wait for a new human response before taking any funding action; only use
+`pay_within_spending_limit` when they explicitly choose automatic funding for the
+current crypto instruction.
 
-The published MCP package owns the deployed AgentBank endpoint defaults. Do not
-add endpoint environment overrides to a normal installation.
+**Local stdio behavior:** if AgentBank tools are absent, install the MCP below.
+When they are available, call `whoami`; use the local onboarding flow only when
+it reports `MISSING_CREDENTIAL`. Use `execute_payment_instruction` only on this
+surface and only with the current server-generated instruction.
 
-If the tools are absent in Codex and the user explicitly asked to set up or
-onboard AgentBank, run this skill's bootstrap:
+## Local stdio prerequisite: install the AgentBank MCP
+
+These installation commands apply only to local stdio MCP users. The published
+package already defaults to the production AgentBank endpoints, so use these
+commands without environment overrides:
+
+### Codex
 
 ```bash
-node "<skill-directory>/scripts/setup-mcp.mjs" --client codex --json
+codex mcp add agentbank -- npx -y agent-bank-mcp@latest
 ```
 
-Use `--client claude` in Claude Code or Claude Desktop. In Hermes, run:
+### Claude Code
+
+```bash
+claude mcp add agentbank -- npx -y agent-bank-mcp@latest
+```
+
+### Hermes
 
 ```bash
 hermes mcp add agentbank --command npx --args -y agent-bank-mcp@latest
 ```
 
-Then run `/reload-mcp`. If the active client cannot be determined, ask which
-client the user is using. Do not configure more than one client.
+After installation, start a new Codex or Claude Code conversation. In Hermes,
+run `/reload-mcp`. Then confirm the client exposes `whoami`,
+`get_instructions`, and `begin_agent_onboarding` before continuing. A remote
+HTTP/OAuth user does not run these commands: their host configures the remote
+connection and OAuth authorization.
 
-Interpret the result as follows:
+Credential persistence is bound to the OS user and the stable
+`AGENTBANK_MCP_PROFILE` (default `default`), not to `XDG_RUNTIME_DIR`, a desktop
+session, or the calling MCP client. Use a distinct profile for each local human
+or agent identity and keep it unchanged across restarts. On Linux, the default
+vault relies on per-user file permissions plus the host's disk and backup
+protection; copying the complete vault directory also copies its local key.
 
-- `configured`: configuration was added and verified.
-- `already_configured`: the exact configuration already exists.
-- `conflict`: stop and show the conflict; never remove or overwrite it.
-- `client_unavailable`: explain that the selected client CLI is unavailable.
+## Use the AgentBank MCP
 
-After `configured` or `already_configured`, if the MCP tools are still absent,
-tell the user to restart the active coding agent once and repeat:
-`Onboard a new agent`. Do not attempt onboarding before the tools load.
+For local stdio, make sure the AgentBank MCP is installed and loaded by checking
+for `whoami`, `get_instructions`, and `begin_agent_onboarding`. If these tools
+are absent, install the MCP using the matching command above, reload the
+client, and check again. If the client cannot run its configuration command,
+show the matching command to the human. Do not replace AgentBank MCP calls with
+direct HTTP while it reloads.
 
-After installing in Hermes, reload the MCP and preserve the original request
-once the tools become available.
+For remote HTTP/OAuth, do not require or install local-only tools. Confirm that
+`whoami` and the relevant payment tools are available, then use the connected
+OAuth session.
 
-Run onboarding only through the configured AgentBank MCP server in the active
-client and profile. Never use `hermes mcp test`, a standalone `npx` process, a
-temporary Node/Python MCP client, or another client/profile to bypass missing
-tools. A temporary process cannot prove the configured client can restore its
-local installation.
+When the tools are available, preserve the original task and continue immediately. Call `whoami`
+without waiting for another user message, then use the relevant AgentBank MCP tools across setup,
+payment, tracking, recovery, recipient, and wallet workflows.
 
-After browser approval, call `whoami` on that same MCP connection, reload or
-restart the active client once, then call `whoami` again. Report setup complete
-only after the post-restart call succeeds.
+Do not replace AgentBank MCP calls with direct HTTP requests, locally constructed protocol payloads,
+or unrelated payment tools. Treat AgentBank Core as the authority for approvals, locked routes,
+payment instructions, transaction verification, and terminal payment state.
 
-For a payment-only request with missing tools, explain the required user-level
-MCP configuration and obtain permission before changing it.
+Do not use or ask for legacy intent, route-agreement, approval, settlement, partner, raw-swap, or
+progress-reporting mutations. They are not exposed by the production server.
 
-Read [onboarding.md](references/onboarding.md) when installing, onboarding,
-checking account readiness, revoking an installation, or resuming after the
-one-time restart.
+## Safety rules
 
-## Safety invariants
-
-- Never request or expose private keys, seed phrases, AgentBank JWTs, Privy
-  tokens, authorization keys, or World ID proofs.
-- Never infer recipient fields, wallet addresses, token contracts, chains,
-  decimals, amounts, or calldata from weak context.
-- Use decimal strings for human amounts and structured asset objects.
-- Use `get_supported_payment_capabilities` and `list_currencies` as the
-  current authority for supported asset-and-chain pairs; do not assume every
-  crypto route is on World Chain.
-- Keep estimates recipient-free. Resolve recipient data only after the human
-  elects to create the reviewed route and before `create_payment`.
-- Show recipient, send amount, receive amount, every fee and currency, route,
-  expiry, and material warnings before creating a payment.
-- Set `confirmed_by_user=true` only after the human confirms that complete
-  summary. Reconfirm after a material change.
-- Use only a current server-generated instruction to move funds.
-- A transaction receipt is evidence, not payment completion. Trust
+- Never request or expose private keys, seed phrases, AgentBank JWTs, wallet signing tokens, authorization keys, or identity and approval proofs.
+- Never infer a wallet address, bank account, recipient, token contract, chain, decimals, amount, or calldata from weak context.
+- Use decimal strings for human amounts.
+- Show the complete recipient, source amount, destination amount, fees with fee currencies, route, and expiry before `create_payment`.
+- Set `confirmed_by_user=true` only after the human confirms that summary.
+- Use only a current server-generated payment instruction to move funds.
+- A transaction hash or successful receipt is not payment completion. Trust
   `get_payment`.
-- Reuse a `request_id` only to retry the identical mutation and payload.
-- Treat an approval-threshold update as a security-policy change. Call
-  `update_payment_approval_policy` only after explicit human confirmation.
-- Follow the payment's returned approval status. Never infer World ID behavior
-  from a fixed threshold or route composition.
-- Use payment plans only for multiple independently settled payments that the
-  human wants to review together under one approval. Review every plan item
-  before submission; a draft plan does not move funds.
-- Treat `status=expired` with `failure.code=payment_expired` as terminal. Obtain
-  a fresh estimate and confirmation, then create a new payment.
-- On remote HTTP/OAuth, use the returned consumer `display` content and
-  presentation cards or links; do not repeat raw asset objects, IDs, or wallet
-  details unless the human explicitly asks for technical details.
-- `execute_payment_instruction` is local stdio only. On remote HTTP/OAuth, use
-  `pay_within_spending_limit` only after a new explicit human choice to fund the
-  current crypto instruction within its returned spending limit; never use it
-  for fiat funding or a swap.
-- Never expose partner identity or use hidden primitive intent, route,
-  approval, settlement, or raw-swap mutations.
+- Do not expose partner identity. Current quote tools intentionally return
+  anonymous offers.
 
-## Runtime guidance
+Read [hosted.md](references/hosted.md) for "Hosted surface (consumer chats)".
 
-At the start of an unfamiliar or resumed workflow, call `get_instructions` with
-the relevant journey:
+## Runtime source of truth
+
+Call `get_instructions` with the relevant journey when starting an unfamiliar
+flow or recovering after an interruption:
 
 ```text
 setup
 pay
-collect
 track
 recover
 manage_recipients
 manage_wallets
 ```
 
-The MCP resources `agentbank://guides/routing` and
-`agentbank://instructions/{journey}` are also authoritative. Follow newer
-runtime guidance when it does not conflict with the invariants above.
+The MCP also exposes `agentbank://guides/routing` and
+`agentbank://instructions/{journey}` as resources. Follow newer runtime guidance
+when it does not conflict with these safety rules.
 
-## Route by task
+## Request IDs
 
-- Setup, onboarding, readiness, or logout:
-  [onboarding.md](references/onboarding.md)
-- KYC, badges, World ID, or AgentKit verification:
-  [identity.md](references/identity.md)
-- Creating, approving, funding, executing, or tracking a payment:
-  [payments.md](references/payments.md)
-- Saved recipients, QR/bank data, wallet lookup, balances, or allowances:
-  [recipients-wallets.md](references/recipients-wallets.md)
-- Failed, stuck, cancelled, reviewed, or recipient-correction states:
-  [recovery.md](references/recovery.md)
+Generate a stable `request_id` for each logical create, continue, execute,
+approve, cancel, recipient-correction, recipient-creation, or
+recipient-replacement mutation.
 
-Load only the references needed for the current task.
+Reuse the same ID only when retrying the same tool call with the same payload.
+Use a different ID for a changed payload or a different transaction.
+Do not treat a transaction request ID as a payment ID.
 
-## Tool groups
+## Asset and amount format
+
+Use canonical assets:
+
+```json
+{ "type": "crypto", "ticker": "USDC", "chain": "worldchain" }
+```
+
+```json
+{ "type": "fiat", "symbol": "VND" }
+```
+
+For `exact_source`, put the exact amount in `source.amount`. For
+`exact_destination`, put it in `destination.amount`.
+
+Use `list_currencies` whenever a ticker, fiat code, chain, token address, or
+decimals need verification. Always pass the complete structured asset object;
+compound asset strings are invalid. These objects are tool inputs: on the
+hosted surface the human only ever hears dollars and local currencies.
+
+`get_supported_payment_capabilities` is optional product reference material. It
+returns a static Markdown summary and never confirms that a route is currently
+live, in the requested amount band, or ready for this user.
+
+Read [x402.md](references/x402.md) for "x402 outbound payments".
+
+Read [onboarding.md](references/onboarding.md) for "1. Set up the agent".
+
+Read [identity.md](references/identity.md) for "2. Handle identity requirements".
+
+Read [payments.md](references/payments.md) for "3. Understand the payment request".
+
+Read [recipients-wallets.md](references/recipients-wallets.md) for "4. Resolve the recipient".
+
+Read [payments.md](references/payments.md) for "5. Discover a supported route", "6. Estimate the complete payment", "7. Confirm once", "8. Create and approve the durable payment", "9. Follow the payment instruction".
+
+Read [recovery.md](references/recovery.md) for "10. Track the payment", "11. Recover safely".
+
+## 12. Tool selection reference
 
 ```text
-Setup/security: whoami, relogin, begin_agent_onboarding, wait_for_agent_onboarding, get_installation_status, get_account_status, check_my_scopes, get_payment_approval_policy, update_payment_approval_policy, revoke_agent
-Identity: check_verification_status, do_kyc, get_verification_guidance, verify_agent_kit
+Local setup: begin_agent_onboarding, wait_for_agent_onboarding, get_installation_status, revoke_agent
+Hosted setup: whoami, check_my_scopes, get_account_reference
+Identity: whoami, get_account_status, check_my_scopes, check_verification_status, do_kyc, get_verification_guidance
 Discovery: list_currencies, get_supported_payment_capabilities, list_quote_book_pairs, browse_quote_book, estimate_payment
 Plans: create_payment_plan, review_payment_plan, list_payment_plans, submit_payment_plan, cancel_payment_plan
-Payments: create_payment, continue_payment, execute_payment_instruction, get_payment, list_payments, cancel_payment, correct_payment_recipient
-External x402: discover_x402_services, estimate_x402_outbound_payment, confirm_x402_outbound_payment, get_x402_outbound_payment, list_x402_outbound_payments
+Local payments: create_payment, continue_payment, execute_payment_instruction, get_payment, list_payments, cancel_payment, correct_payment_recipient
+Hosted payments: create_payment, continue_payment, pay_within_spending_limit, get_payment, track_payments, list_payments, cancel_payment, correct_payment_recipient, get_payment_link
 Recipients: list_recipients, get_recipient, create_recipient, update_recipient
-Wallets: list_wallets, get_wallet_balances, get_token_allowance, approve_token, get_transaction_receipt
-Hosted OAuth only: get_balance, get_account_reference, set_spending_limit, pay_within_spending_limit, show_payment_approval, get_payment_instruction, show_payment_progress
+Local wallet: list_wallets, verify_agent_kit, get_wallet_balances, get_token_allowance, approve_token, get_transaction_receipt
+Hosted balance and spending limits: get_account_reference, get_balance, set_spending_limit, list_spending_limits, get_spending_limit, show_spending_limit
+Hosted bank directory: get_supported_bank_names
 Guidance: get_instructions
 ```
+
+Hosted notes: `get_balance` = the human's AgentBank balance in dollars (no
+inputs). `get_account_reference` = the `account_id` for
+`pay_within_spending_limit` (also present in `funding_options`).
+`pay_within_spending_limit` inputs: `request_id`, `payment_id`,
+`instruction_id`, `account_id`, `confirmed_by_user`. Local stdio keeps
+`get_wallet_balances`, `list_wallets` and `execute_payment_instruction`.
