@@ -1,7 +1,7 @@
 {
-  "source_url": "https://protocol.agentbank.world/SKILL.md",
-  "source_sha256": "8fb642a72ed7842b1590a916919855c799314132859a5a9ca492974f931c89e9",
-  "imported_at": "2026-09-27T18:30:37.449Z",
+  "source_url": "https://protocol.useagentbank.com/SKILL.md",
+  "source_sha256": "6cead33f9123a026135fa53fc69fb018df53a352d5ea631173c70f2458dbd9f7",
+  "imported_at": "2026-09-28T18:06:52.538Z",
   "packaging_keys_added": [
     "license",
     "compatibility",

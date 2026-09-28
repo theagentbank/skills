@@ -25,7 +25,7 @@ hooks.
 
 The skill text is authored in the AgentBank backend and published live at
 <https://useagentbank.com/SKILL.md> (served from
-<https://protocol.agentbank.world/SKILL.md>). This repository only repackages
+<https://protocol.useagentbank.com/SKILL.md>). This repository only repackages
 that file for `npx skills add theagentbank/skills`:
 
 - [`skills/agentbank-pay/SKILL.md`](skills/agentbank-pay/SKILL.md) keeps the
@@ -60,7 +60,7 @@ connected tools.
 
 ```bash
 npm ci
-npm run import:backend   # regenerate from https://protocol.agentbank.world/SKILL.md
+npm run import:backend   # regenerate from https://protocol.useagentbank.com/SKILL.md
 npm run check            # offline: structure, round-trip, tests
 npm run check:backend    # online: generated files match the live backend
 npm run check:public-skill

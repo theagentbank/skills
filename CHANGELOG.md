@@ -4,6 +4,12 @@ All notable user-visible changes are recorded here.
 
 This project follows [Semantic Versioning](https://semver.org/).
 
+## 2.0.1 - 2026-09-28
+
+- Import from https://protocol.useagentbank.com/SKILL.md; agentbank.world is retired.
+- Regenerated the skill from the current backend, which moved every link to the useagentbank.com hosts (remote MCP: https://mcp.useagentbank.com).
+- `setup-mcp.mjs` production defaults now use protocol.useagentbank.com and app.useagentbank.com.
+
 ## [2.0.0] - 2026-09-27
 
 ### Changed
