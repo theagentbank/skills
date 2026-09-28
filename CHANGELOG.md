@@ -4,6 +4,10 @@ All notable user-visible changes are recorded here.
 
 This project follows [Semantic Versioning](https://semver.org/).
 
+## 2.0.3 - 2026-09-29
+
+- The hourly import merges its own pull request after the import, `npm run check` and the backend byte-for-byte check pass. Set the repository variable `AGENTBANK_AUTO_MERGE_IMPORT` to `false` to open the PR only.
+
 ## 2.0.2 - 2026-09-29
 
 - Installed the hourly backend import workflow and the updated validate workflow from `docs/ci/`.
