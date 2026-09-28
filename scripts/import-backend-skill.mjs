@@ -143,7 +143,7 @@ async function main() {
   if (options.check) {
     if (result.changed.length) {
       process.stderr.write(
-        `Generated skill files are out of date with ${result.source} (sha256 ${result.sourceSha}):\n${result.changed.map((f) => `- ${f}`).join('\n')}\nRun: npm run import:backend\n`,
+        `Generated skill files are out of date with ${result.source} (sha256 ${result.sourceSha}):\n${result.changed.map((f) => `- ${toPosix(f)}`).join('\n')}\nRun: npm run import:backend\n`,
       );
       process.exitCode = 1;
     } else {
@@ -153,7 +153,7 @@ async function main() {
   }
   process.stdout.write(
     result.changed.length
-      ? `Imported ${result.source} (sha256 ${result.sourceSha}); updated:\n${result.changed.map((f) => `- ${f}`).join('\n')}\n`
+      ? `Imported ${result.source} (sha256 ${result.sourceSha}); updated:\n${result.changed.map((f) => `- ${toPosix(f)}`).join('\n')}\n`
       : `Already current with ${result.source} (sha256 ${result.sourceSha})\n`,
   );
 }
@@ -163,4 +163,9 @@ if (process.argv[1] && import.meta.url === pathToFileURL(path.resolve(process.ar
     process.stderr.write(`${error.message}\n`);
     process.exitCode = 1;
   });
+}
+
+// Report repo paths with forward slashes on every OS so output and tests match.
+function toPosix(relative) {
+  return relative.split(path.sep).join('/');
 }
