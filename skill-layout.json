@@ -1,6 +1,6 @@
 {
   "skill": "agentbank-pay",
-  "default_source": "https://protocol.agentbank.world/SKILL.md",
+  "default_source": "https://protocol.useagentbank.com/SKILL.md",
   "core": [
     "Choose the MCP surface first",
     "Local stdio prerequisite: install the AgentBank MCP",

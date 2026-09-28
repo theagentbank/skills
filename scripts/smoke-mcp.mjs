@@ -92,6 +92,7 @@ const expectedToolsByVersion = new Map([
   ['0.1.32', latestExpectedTools],
   ['0.1.33', latestExpectedTools],
   ['0.1.37', mcp037ExpectedTools],
+  ['0.1.38', mcp037ExpectedTools],
 ]);
 let stderr = '';
 let initialized = false;

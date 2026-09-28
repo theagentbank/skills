@@ -5,7 +5,7 @@ license: MIT
 compatibility: "Local MCP clients (Codex, Claude Code, Claude Desktop, OpenClaw, Hermes) need Node.js 22.20+; hosted clients (ChatGPT, Claude, Meta Muse, Poke) connect to the HTTPS MCP server with OAuth."
 metadata:
   author: "theagentbank"
-  version: "2.0.0"
+  version: "2.0.1"
 ---
 
 # AgentBank Pay
@@ -26,7 +26,7 @@ Call `tools/list` and read the tool names:
   This surface uses a credential stored on the current device and can execute a
   current crypto instruction through the agent's local wallet, a signing key
   bound to this installation.
-- **Hosted MCP over OAuth** (`https://plugin.agentbank.world/mcp`): local
+- **Hosted MCP over OAuth** (`https://mcp.useagentbank.com`): local
   onboarding and executor tools are absent. OAuth already supplies the owner
   context. It exposes `get_balance`, `set_spending_limit`,
   `pay_within_spending_limit`, `get_account_reference`, `track_payments` and

@@ -38,13 +38,13 @@ amount-specific route and the user's rail readiness when creating the payment.
 For fiat-to-fiat or source-token-to-fiat routing:
 
 1. List relevant add-money (`on_ramp`) and send-money (`off_ramp`) pairs.
-2. Find a common active crypto asset on one supported chain.
-3. Call `estimate_payment` with `route.intermediate_asset` set explicitly.
+2. AgentBank composes supported two-leg routes through USDC on Worldchain automatically.
+3. Call `estimate_payment` without an intermediate asset.
 4. Prefer the requested route; otherwise compare executable outcomes including
    fees instead of comparing raw quote-book rates alone.
 
-There is no automatic Core route planner. Do not ask Core to invent a two-hop
-route.
+AgentBank's MCP plans supported two-hop routes through USDC on Worldchain. Do not
+pass an intermediate asset or ask Core to select one.
 
 Use `browse_quote_book` only for anonymous rough-rate or band discovery. Its
 `rate` is raw. Read `fee_pct`, `flat_fee`, and `fee_ccy` together.
@@ -56,11 +56,11 @@ Call `estimate_payment` for every supported flow:
 - direct add-money (`on_ramp`);
 - direct send-money (`off_ramp`);
 - pure same-chain crypto swap;
-- explicit fiat-to-fiat two-hop;
-- explicit crypto-token-to-fiat two-hop.
+- fiat-to-fiat two-hop through USDC on Worldchain;
+- Worldchain crypto-token-to-fiat two-hop through USDC on Worldchain.
 
-For two hops, pass `route.intermediate_asset`. Do not provide a recipient:
-estimates are recipient-free route previews.
+For two hops, AgentBank uses USDC on Worldchain automatically. Do not provide a
+recipient: estimates are recipient-free route previews.
 
 Treat the result as an ephemeral review preview:
 
@@ -187,7 +187,6 @@ After confirmation, call `create_payment` with:
   `destination.recipient_fields`, when the route requires one;
 - the recipient's `payment_instrument` inside its canonical `recipient_fields`
   when the selected quote exposed `recipient_requirements`;
-- top-level `intermediate_asset` for two hops;
 - the exact `hops` returned by the current estimate.
 
 Do not pass an estimate ID. None exists.

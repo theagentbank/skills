@@ -9,14 +9,14 @@ the local sections below for wording.
 
 If your host connects natively, skip this. If you write your own client:
 
-- Endpoint `POST https://plugin.agentbank.world/mcp`, JSON-RPC over Streamable
+- Endpoint `POST https://mcp.useagentbank.com`, JSON-RPC over Streamable
   HTTP. Send `Accept: application/json, text/event-stream`; a response may be
   an SSE stream, take the last `data:` line. The server is stateless: a fresh
   `initialize` (`protocolVersion` `2025-06-18`; `2025-03-26` also works) per
   script run is fine and no session id is required.
 - Auth is OAuth 2.1 authorization code with PKCE `S256`, public client
   (`token_endpoint_auth_method: none`). Read
-  `https://protocol.agentbank.world/.well-known/oauth-authorization-server` for
+  `https://protocol.useagentbank.com/.well-known/oauth-authorization-server` for
   the authorize, token and registration endpoints; do not invent paths.
 - Meta Muse's connect page does not perform dynamic registration: put the
   pre-issued client id `ab_mcp_XEXqSJxoelaxm6p16ybaihkIi6M` in the connector
