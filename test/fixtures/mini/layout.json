@@ -1,0 +1,9 @@
+{
+  "skill": "mini-skill",
+  "default_source": "https://example.invalid/SKILL.md",
+  "core": ["Keep one", "Keep two"],
+  "references": {
+    "first.md": ["Move A", "Move B", "Move C"],
+    "tail.md": ["Tail"]
+  }
+}

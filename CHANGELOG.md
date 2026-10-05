@@ -4,6 +4,49 @@ All notable user-visible changes are recorded here.
 
 This project follows [Semantic Versioning](https://semver.org/).
 
+## 2.0.3 - 2026-09-29
+
+- The hourly import merges its own pull request after the import, `npm run check` and the backend byte-for-byte check pass. Set the repository variable `AGENTBANK_AUTO_MERGE_IMPORT` to `false` to open the PR only.
+
+## 2.0.2 - 2026-09-29
+
+- Installed the hourly backend import workflow and the updated validate workflow from `docs/ci/`.
+- Removed the retired `publish-landing-skill` workflow; the landing site serves the skill live from the backend.
+
+## 2.0.1 - 2026-09-28
+
+- Import from https://protocol.useagentbank.com/SKILL.md; agentbank.world is retired.
+- Regenerated the skill from the current backend, which moved every link to the useagentbank.com hosts (remote MCP: https://mcp.useagentbank.com).
+- `setup-mcp.mjs` production defaults now use protocol.useagentbank.com and app.useagentbank.com.
+- Audited `agent-bank-mcp@0.1.38` (published 2026-09-28): same 46-tool catalog as 0.1.37.
+
+## [2.0.0] - 2026-09-27
+
+### Changed
+
+- **Breaking:** the skill is now generated from the AgentBank backend file
+  published at https://useagentbank.com/SKILL.md (served from
+  https://protocol.agentbank.world/SKILL.md) instead of being hand-written here.
+  `skills/agentbank-pay/SKILL.md` keeps the backend core sections in place;
+  other sections move unchanged into `references/` (new `hosted.md` and
+  `x402.md`) behind generated pointer lines, per `skill-layout.json`.
+- `dist/agentbank-pay/SKILL.md` is now the backend file byte for byte and is no
+  longer limited to 500 lines.
+- `protocol-core-sync.json` records `source_url`, `source_sha256`, and
+  `imported_at` instead of a protocol-core commit.
+- `check:public-skill` compares https://useagentbank.com/SKILL.md with the
+  imported bytes; the manifest check is gone.
+
+### Added
+
+- `npm run import:backend` / `check:backend` and an hourly import workflow that
+  opens a pull request when the backend changes.
+
+### Removed
+
+- The reverse sync flows to protocol-core and the landing page
+  (`sync:protocol-core`, `sync:landing-page`, and the landing publish workflow).
+
 ## [1.8.0] - 2026-09-27
 
 ### Added

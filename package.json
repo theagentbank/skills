@@ -1,6 +1,6 @@
 {
   "name": "@theagentbank/skills",
-  "version": "1.8.0",
+  "version": "2.0.3",
   "private": true,
   "type": "module",
   "description": "Installable AgentBank skills for coding agents",
@@ -32,8 +32,8 @@
     "smoke:mcp": "node scripts/smoke-mcp.mjs",
     "check:public-skill": "node scripts/check-public-skill.mjs",
     "export:legacy": "node scripts/export-legacy-skill.mjs",
-    "sync:landing-page": "node scripts/sync-landing-skill.mjs",
-    "sync:protocol-core": "node scripts/sync-protocol-core.mjs"
+    "import:backend": "node scripts/import-backend-skill.mjs",
+    "check:backend": "node scripts/import-backend-skill.mjs --check"
   },
   "devDependencies": {
     "yaml": "2.9.0"

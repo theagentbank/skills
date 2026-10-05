@@ -3,32 +3,19 @@ import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import test from 'node:test';
 import { fileURLToPath } from 'node:url';
-import { sha256, validatePublicSkill } from '../scripts/check-public-skill.mjs';
+import { comparePublicSkill } from '../scripts/check-public-skill.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
-test('generated public skill is self-contained and has immutable provenance', async () => {
-  const skill = await readFile(path.join(root, 'dist', 'agentbank-pay', 'SKILL.md'), 'utf8');
-  const manifest = {
-    source: 'https://github.com/theagentbank/skills',
-    skill: 'agentbank-pay',
-    release: 'v1.8.0',
-    sourceCommit: 'a'.repeat(40),
-    sha256: sha256(skill),
-  };
-  assert.deepEqual(validatePublicSkill(skill, manifest), []);
+test('public skill check accepts identical bytes', async () => {
+  const local = await readFile(path.join(root, 'dist', 'agentbank-pay', 'SKILL.md'));
+  assert.deepEqual(comparePublicSkill(Buffer.from(local), local), []);
 });
 
-test('public skill checker rejects unavailable bootstrap dependencies', async () => {
-  const skill = await readFile(path.join(root, 'dist', 'agentbank-pay', 'SKILL.md'), 'utf8');
-  const errors = validatePublicSkill(skill.replace('codex mcp get agentbank --json', '<skill-directory>'), {
-    source: 'https://github.com/theagentbank/skills',
-    skill: 'agentbank-pay',
-    release: 'main',
-    sourceCommit: 'invalid',
-    sha256: 'invalid',
-  });
-  assert.match(errors.join('\n'), /unavailable local skill-directory placeholder/);
-  assert.match(errors.join('\n'), /immutable version label/);
-  assert.match(errors.join('\n'), /sha256 does not match/);
+test('public skill check rejects any byte difference with both hashes', async () => {
+  const local = await readFile(path.join(root, 'dist', 'agentbank-pay', 'SKILL.md'));
+  const changed = Buffer.concat([local, Buffer.from('\n')]);
+  const errors = comparePublicSkill(changed, local);
+  assert.equal(errors.length, 1);
+  assert.match(errors[0], /differs from dist\/agentbank-pay\/SKILL\.md \(sha256 [0-9a-f]{64}/);
 });

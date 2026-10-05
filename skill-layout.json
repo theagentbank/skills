@@ -1,0 +1,30 @@
+{
+  "skill": "agentbank-pay",
+  "default_source": "https://protocol.useagentbank.com/SKILL.md",
+  "core": [
+    "Choose the MCP surface first",
+    "Local stdio prerequisite: install the AgentBank MCP",
+    "Use the AgentBank MCP",
+    "Safety rules",
+    "Runtime source of truth",
+    "Request IDs",
+    "Asset and amount format",
+    "12. Tool selection reference"
+  ],
+  "references": {
+    "hosted.md": ["Hosted surface (consumer chats)"],
+    "x402.md": ["x402 outbound payments"],
+    "onboarding.md": ["1. Set up the agent"],
+    "identity.md": ["2. Handle identity requirements"],
+    "payments.md": [
+      "3. Understand the payment request",
+      "5. Discover a supported route",
+      "6. Estimate the complete payment",
+      "7. Confirm once",
+      "8. Create and approve the durable payment",
+      "9. Follow the payment instruction"
+    ],
+    "recipients-wallets.md": ["4. Resolve the recipient"],
+    "recovery.md": ["10. Track the payment", "11. Recover safely"]
+  }
+}

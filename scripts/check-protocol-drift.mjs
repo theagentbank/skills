@@ -1,10 +1,17 @@
 #!/usr/bin/env node
 
+// Maintainer check: compares the backend skill file in a local protocol-core
+// checkout with the bytes this repository last imported. The live URL, not
+// the git checkout, is what the importer and CI use.
+//
+//   node scripts/check-protocol-drift.mjs [--target ../protocol-core]
+
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { parsePorcelainPath } from './git-porcelain.mjs';
+import { sha256 } from './skill-layout.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const args = process.argv.slice(2);
@@ -17,30 +24,7 @@ const target = path.resolve(
 const marker = JSON.parse(
   await readFile(path.join(root, 'protocol-core-sync.json'), 'utf8'),
 );
-const relevantPaths = [
-  'mcp-agent-server',
-  'backend-core/src/modules/agent',
-  'backend-core/src/modules/identity',
-  'backend-core/src/modules/currency',
-  'backend-core/src/modules/intent',
-  'backend-core/src/modules/payment',
-  'backend-core/src/modules/quote-book',
-  'backend-core/src/modules/route-agreement',
-  'backend-core/src/modules/settlement',
-  'backend-core/src/common/errors',
-  'backend-core/src/config',
-  'backend-core/src/migrations',
-  'humanfx-inhouse-solver/src',
-];
-const generatedCompatibilityPaths = new Set([
-  'mcp-agent-server/skills/agentbank-pay/SKILL.md',
-  'mcp-agent-server/skills/agentbank-pay/agents/openai.yaml',
-]);
-
-function isGeneratedProtocolArtifact(changedPath) {
-  return generatedCompatibilityPaths.has(changedPath) ||
-    /^mcp-agent-server\/agent-bank-mcp-\d+\.\d+\.\d+\.tgz$/.test(changedPath);
-}
+const sourcePath = marker.source_path ?? 'mcp-agent-server/skills/agentbank-pay/SKILL.md';
 
 function git(gitArgs) {
   const result = spawnSync('git', ['-C', target, ...gitArgs], {
@@ -55,47 +39,23 @@ function git(gitArgs) {
 }
 
 const head = git(['rev-parse', 'HEAD']);
-const dirty = git([
-  'status',
-  '--porcelain',
-  '--untracked-files=all',
-  '--',
-  ...relevantPaths,
-])
+const branch = git(['rev-parse', '--abbrev-ref', 'HEAD']);
+const dirty = git(['status', '--porcelain', '--', sourcePath])
   .split('\n')
   .filter(Boolean)
-  .filter((line) => {
-    const changedPath = parsePorcelainPath(line);
-    return !isGeneratedProtocolArtifact(changedPath);
-  });
+  .map(parsePorcelainPath);
+const bytes = await readFile(path.join(target, sourcePath));
+const localSha = sha256(bytes);
+const where = `${target} (${branch} @ ${head.slice(0, 12)}${dirty.length ? ', uncommitted changes' : ''})`;
 
-if (head === marker.source_commit && dirty.length === 0) {
-  process.stdout.write(`Protocol-core is synchronized at ${head}\n`);
+if (localSha === marker.source_sha256) {
+  process.stdout.write(`Backend skill in ${where} matches the imported sha256 ${localSha}\n`);
   process.exit(0);
 }
-
-const ancestor = spawnSync(
-  'git',
-  ['-C', target, 'merge-base', '--is-ancestor', marker.source_commit, head],
-  { shell: false },
-);
-if (ancestor.status !== 0) {
-  process.stderr.write(
-    `Recorded protocol commit ${marker.source_commit} is not an ancestor of ${head}. Re-audit the full divergence.\n`,
-  );
-  process.exit(1);
-}
-
-const range = `${marker.source_commit}..${head}`;
-const commits =
-  head === marker.source_commit
-    ? ''
-    : git(['log', '--date=iso-strict', '--format=%h %ad %s', range]);
-const files =
-  head === marker.source_commit
-    ? ''
-    : git(['diff', '--name-only', range, '--', ...relevantPaths]);
 process.stderr.write(
-  `Protocol-core differs from the recorded sync.\n\nCommits:\n${commits || '(none)'}\n\nRelevant committed files:\n${files || '(none)'}\n\nRelevant working-tree changes:\n${dirty.join('\n') || '(none)'}\n`,
+  `Backend skill in ${where} differs from the imported source.\n` +
+    `  ${sourcePath}: sha256 ${localSha}\n` +
+    `  imported ${marker.source_url}: sha256 ${marker.source_sha256}\n` +
+    'The live URL is authoritative for imports; pull protocol-core or wait for its deploy, then run npm run import:backend.\n',
 );
 process.exit(1);

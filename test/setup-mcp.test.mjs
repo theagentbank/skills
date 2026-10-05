@@ -121,8 +121,8 @@ const compatibleExpected = {
   command: 'npx',
   args: ['-y', 'agent-bank-mcp@latest'],
   env: {
-    PROTOCOL_BASE_URL: 'https://protocol.agentbank.world',
-    APP_BASE_URL: 'https://app.agentbank.world',
+    PROTOCOL_BASE_URL: 'https://protocol.useagentbank.com',
+    APP_BASE_URL: 'https://app.useagentbank.com',
   },
 };
 

@@ -13,8 +13,8 @@ export const EXPECTED = Object.freeze({
 });
 
 const COMPATIBLE_ENV = Object.freeze({
-  PROTOCOL_BASE_URL: 'https://protocol.agentbank.world',
-  APP_BASE_URL: 'https://app.agentbank.world',
+  PROTOCOL_BASE_URL: 'https://protocol.useagentbank.com',
+  APP_BASE_URL: 'https://app.useagentbank.com',
 });
 
 const EXIT = Object.freeze({
