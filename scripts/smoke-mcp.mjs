@@ -93,6 +93,7 @@ const expectedToolsByVersion = new Map([
   ['0.1.33', latestExpectedTools],
   ['0.1.37', mcp037ExpectedTools],
   ['0.1.38', mcp037ExpectedTools],
+  ['0.1.42', mcp037ExpectedTools],
 ]);
 let stderr = '';
 let initialized = false;
@@ -263,10 +264,18 @@ readline.createInterface({ input: child.stdout }).on('line', (line) => {
     const recipientProperties = createRecipient?.properties ?? {};
     const instrumentValues = recipientProperties.payment_instrument?.enum ?? [];
     const bankProperties = recipientProperties.bank_info?.properties ?? {};
+    const expandedRecipientContract = serverVersion === '0.1.42';
+    const expectedInstruments = expandedRecipientContract
+      ? ['qr', 'pix', 'bank_transfer', 'ach', 'mobile_money', 'venmo', 'paypal']
+      : ['qr', 'bank_transfer', 'mobile_money'];
     if (
-      JSON.stringify(instrumentValues) !== JSON.stringify(['qr', 'bank_transfer', 'mobile_money']) ||
+      JSON.stringify(instrumentValues) !== JSON.stringify(expectedInstruments) ||
       !('bank_name' in bankProperties) ||
-      'bank_code' in bankProperties ||
+      (expandedRecipientContract
+        ? bankProperties.bank_code?.type !== 'string' ||
+          bankProperties.pix_key?.type !== 'string' ||
+          JSON.stringify(bankProperties.account_type?.enum) !== JSON.stringify(['checking', 'savings'])
+        : 'bank_code' in bankProperties) ||
       !('mobile_money_network_code' in bankProperties) ||
       !('mobile_money_destination' in bankProperties)
     ) {
@@ -279,6 +288,19 @@ readline.createInterface({ input: child.stdout }).on('line', (line) => {
     if (JSON.stringify(updateInstrument) !== JSON.stringify(instrumentValues)) {
       finish(new Error('update_recipient must accept the canonical payment instruments'));
       return;
+    }
+
+    if (expandedRecipientContract) {
+      const estimateProperties = byName.get('estimate_payment')?.inputSchema?.properties ?? {};
+      if (
+        JSON.stringify(estimateDestination.payment_instrument?.enum) !== JSON.stringify(expectedInstruments) ||
+        JSON.stringify(createDestination.payment_instrument?.enum) !== JSON.stringify(expectedInstruments) ||
+        'intermediate_asset' in (estimateProperties.route?.properties ?? {}) ||
+        'intermediate_asset' in createProperties
+      ) {
+        finish(new Error('MCP 0.1.42 must preserve instrument-specific quotes and server-selected intermediate assets'));
+        return;
+      }
     }
 
     if (expectedSet.has('get_supported_bank_names')) {

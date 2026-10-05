@@ -1,7 +1,8 @@
 {
   "source_url": "https://protocol.useagentbank.com/SKILL.md",
-  "source_sha256": "6cead33f9123a026135fa53fc69fb018df53a352d5ea631173c70f2458dbd9f7",
-  "imported_at": "2026-09-28T18:06:52.538Z",
+  "source_file": "../protocol-core/mcp-agent-server/skills/agentbank-pay/SKILL.md",
+  "source_sha256": "950300424ed0f73a4d27518a02f8a44a34554d6526ef82657ebc5be18ae5cae6",
+  "imported_at": "2026-10-05T07:41:27.666Z",
   "packaging_keys_added": [
     "license",
     "compatibility",
@@ -11,6 +12,6 @@
   "source_branch": "development/1.0.0",
   "source_path": "mcp-agent-server/skills/agentbank-pay/SKILL.md",
   "mcp_package": "agent-bank-mcp",
-  "mcp_version": "0.1.38",
+  "mcp_version": "0.1.42",
   "mcp_tool_count": 46
 }

@@ -167,6 +167,9 @@ test('fixture: importer CLI writes, stays idempotent, and --check detects hand e
   assert.equal(first.status, 0, first.stderr);
   const marker = JSON.parse(await readFile(path.join(repo, 'protocol-core-sync.json'), 'utf8'));
   assert.equal(marker.mcp_version, '0.1.37');
+  const importedLayout = JSON.parse(await readFile(path.join(repo, 'skill-layout.json'), 'utf8'));
+  assert.equal(marker.source_url, importedLayout.default_source);
+  assert.equal(marker.source_file, source);
   assert.match(marker.source_sha256, /^[0-9a-f]{64}$/);
   assert.equal(
     await readFile(path.join(repo, 'dist', 'mini-skill', 'SKILL.md'), 'utf8'),

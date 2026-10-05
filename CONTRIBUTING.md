@@ -36,12 +36,19 @@ npm run smoke:install
 npm run smoke:mcp
 ```
 
+To reconcile an unreleased backend checkout, use
+`npm run import:backend -- --source ../protocol-core/mcp-agent-server/skills/agentbank-pay/SKILL.md`.
+The marker retains the public source URL and records the local input as
+`source_file`. Check against that same source until it is deployed. The hourly
+live importer can replace an ahead-of-deployment import; deploy the backend
+before merging/pushing such a skill update into the automated release flow.
+
 `smoke:mcp` initializes `agent-bank-mcp@latest` and checks its tool catalog and
 critical input schemas against the contract recorded in `scripts/smoke-mcp.mjs`.
 It never starts onboarding or moves funds. For a release candidate:
 
 ```bash
-AGENTBANK_MCP_PACKAGE=../protocol-core/mcp-agent-server/agent-bank-mcp-candidate.tgz AGENTBANK_MCP_EXPECTED_VERSION=0.1.37 npm run smoke:mcp
+AGENTBANK_MCP_PACKAGE=../protocol-core/mcp-agent-server/agent-bank-mcp-candidate.tgz AGENTBANK_MCP_EXPECTED_VERSION=0.1.42 npm run smoke:mcp
 ```
 
 Maintainers with a local protocol-core checkout can compare its skill file with

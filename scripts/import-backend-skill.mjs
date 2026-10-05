@@ -63,13 +63,15 @@ async function readOptional(file) {
   }
 }
 
-function markerFor(previous, { source, sourceSha, addedKeys }) {
+function markerFor(previous, { source, sourceFile, sourceSha, addedKeys }) {
   const unchanged =
     previous.source_sha256 === sourceSha &&
     previous.source_url === source &&
+    previous.source_file === sourceFile &&
     JSON.stringify(previous.packaging_keys_added) === JSON.stringify(addedKeys);
   const next = {
     source_url: source,
+    ...(sourceFile ? { source_file: sourceFile } : {}),
     source_sha256: sourceSha,
     imported_at: unchanged && previous.imported_at ? previous.imported_at : new Date().toISOString(),
     packaging_keys_added: addedKeys,
@@ -128,7 +130,13 @@ export async function importBackendSkill(options) {
     await writeFile(absolute, content);
   }
   for (const relative of stale) await rm(path.join(root, relative));
-  const nextMarker = markerFor(marker, { source, sourceSha, addedKeys: generated.addedKeys });
+  const localSource = !/^https?:\/\//.test(source);
+  const nextMarker = markerFor(marker, {
+    source: localSource ? layout.default_source : source,
+    sourceFile: localSource ? source : undefined,
+    sourceSha,
+    addedKeys: generated.addedKeys,
+  });
   await writeFile(path.join(root, MARKER), `${JSON.stringify(nextMarker, null, 2)}\n`);
   return { source, sourceSha, changed, written: true };
 }

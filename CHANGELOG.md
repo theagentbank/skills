@@ -4,6 +4,16 @@ All notable user-visible changes are recorded here.
 
 This project follows [Semantic Versioning](https://semver.org/).
 
+## Unreleased
+
+- Audited `agent-bank-mcp@0.1.42`: the 46-tool catalog is unchanged; recipient
+  schemas now include PIX, ACH, Venmo, PayPal, bank codes, and account types.
+  Updated smoke checks while preserving older releases' schema expectations.
+- Reconciled the skill from backend development `f2ae15d8`, with source-side
+  corrections for ACH/Pix fields, instrument-specific estimates, and fee modes.
+  Imported the local backend bytes; the deployed skill must catch up before the
+  default live-backend check can pass.
+
 ## 2.0.3 - 2026-09-29
 
 - The hourly import merges its own pull request after the import, `npm run check` and the backend byte-for-byte check pass. Set the repository variable `AGENTBANK_AUTO_MERGE_IMPORT` to `false` to open the PR only.
