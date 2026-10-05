@@ -48,10 +48,6 @@ pass an intermediate asset or ask Core to select one.
 
 Use `browse_quote_book` only for anonymous rough-rate or band discovery. Its
 `rate` is raw. Read `fee_pct`, `flat_fee`, and `fee_ccy` together.
-Respect `fee_calculation`: `additive` adds the percentage and flat components;
-`max_percentage_or_flat` uses the larger component. Use the live estimate's
-returned fees and effective amounts for confirmation, rather than inventing a
-total from rough quote-book rates.
 
 ## 6. Estimate the complete payment
 
@@ -65,12 +61,6 @@ Call `estimate_payment` for every supported flow:
 
 For two hops, AgentBank uses USDC on Worldchain automatically. Do not provide a
 recipient: estimates are recipient-free route previews.
-
-When the payout instrument is already known, pass it as
-`destination.payment_instrument` for instrument-specific terms. Omitting it
-requests conservative terms across instruments. This does not require or
-permit recipient details in the estimate. If the instrument changes after
-review, obtain a fresh estimate and confirmation.
 
 Treat the result as an ephemeral review preview:
 

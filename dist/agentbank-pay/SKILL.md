@@ -514,23 +514,13 @@ For a new fiat or crypto recipient, call `create_recipient` with one or more of:
 For every fiat recipient, first read the final quote's
 `recipient_requirements`, choose exactly one listed `payment_instrument`, and
 pass it to `create_recipient`. Never infer the instrument from the presence of
-a QR or bank fields. Follow the returned requirements; common field shapes are:
+a QR or bank fields. The field requirements are fixed:
 
 ```text
 qr:             country + qr_content
-pix:            country + pix_key + holder_name (city when required)
 bank_transfer:  country + bank_name + account_number + holder_name
-ach:            country + bank_name + bank_code + account_number + account_type + holder_name + street1 + city + region + postal_code
 mobile_money:   country + mobile_money_network_code + mobile_money_destination
-venmo:          country=US + venmo_phone
-paypal:         country=US + paypal_email + holder_name
 ```
-
-For ACH, `account_type` is `checking` or `savings`; submit the human-provided
-bank code and address fields required by the quote. For Pix, use `pix_key`
-under the `pix` instrument, not an inferred bank-transfer or QR recipient.
-Only offer instruments advertised by the current route. Pass Venmo/PayPal
-canonical fields through `fields`; `bank_info` does not expose those keys.
 
 `mobile_money_destination` is an opaque provider-validatable value. Do not
 force E.164 and do not collect `holder_name` unless a future quote explicitly
@@ -602,10 +592,6 @@ pass an intermediate asset or ask Core to select one.
 
 Use `browse_quote_book` only for anonymous rough-rate or band discovery. Its
 `rate` is raw. Read `fee_pct`, `flat_fee`, and `fee_ccy` together.
-Respect `fee_calculation`: `additive` adds the percentage and flat components;
-`max_percentage_or_flat` uses the larger component. Use the live estimate's
-returned fees and effective amounts for confirmation, rather than inventing a
-total from rough quote-book rates.
 
 ## 6. Estimate the complete payment
 
@@ -619,12 +605,6 @@ Call `estimate_payment` for every supported flow:
 
 For two hops, AgentBank uses USDC on Worldchain automatically. Do not provide a
 recipient: estimates are recipient-free route previews.
-
-When the payout instrument is already known, pass it as
-`destination.payment_instrument` for instrument-specific terms. Omitting it
-requests conservative terms across instruments. This does not require or
-permit recipient details in the estimate. If the instrument changes after
-review, obtain a fresh estimate and confirmation.
 
 Treat the result as an ephemeral review preview:
 
