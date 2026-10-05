@@ -1,5 +1,8 @@
 # AgentBank Skills
 
+[AgentBank — payments for AI agents](https://useagentbank.com) ·
+[Public AgentBank skill](https://useagentbank.com/SKILL.md)
+
 [![Validate](https://github.com/theagentbank/skills/actions/workflows/validate.yml/badge.svg)](https://github.com/theagentbank/skills/actions/workflows/validate.yml)
 [![Agent Skills](https://img.shields.io/badge/Agent%20Skills-compatible-111827)](https://agentskills.io)
 [![License: MIT](https://img.shields.io/badge/license-MIT-16a34a)](LICENSE)
