@@ -70,8 +70,7 @@ Every tool result has `structuredContent` (JSON) and a text copy. Read
   without asking each time. Never "grant" or "allowance".
 - Links are named by purpose, one per message: "tap to approve", "tap to
   verify your identity", "tap to activate your spending limit", "tap to pay".
-  Never mention the approval or signing mechanism, a wallet or a provider. If
-  the host renders the attached card, do not repeat the link; if no card is
+  If the host renders the attached card, do not repeat the link; if no card is
   visible, send the link from the result as a plain link.
 - Recipients read like a bank transfer: Recipient / Bank / Account number on
   separate lines before the human confirms.
