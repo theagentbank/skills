@@ -118,8 +118,6 @@ progress-reporting mutations. They are not exposed by the production server.
 - Use only a current server-generated payment instruction to move funds.
 - A transaction hash or successful receipt is not payment completion. Trust
   `get_payment`.
-- Do not expose partner identity. Current quote tools intentionally return
-  anonymous offers.
 
 ## Hosted surface (consumer chats)
 
@@ -193,8 +191,7 @@ Every tool result has `structuredContent` (JSON) and a text copy. Read
   without asking each time. Never "grant" or "allowance".
 - Links are named by purpose, one per message: "tap to approve", "tap to
   verify your identity", "tap to activate your spending limit", "tap to pay".
-  Never mention the approval or signing mechanism, a wallet or a provider. If
-  the host renders the attached card, do not repeat the link; if no card is
+  If the host renders the attached card, do not repeat the link; if no card is
   visible, send the link from the result as a plain link.
 - Recipients read like a bank transfer: Recipient / Bank / Account number on
   separate lines before the human confirms.
@@ -520,6 +517,8 @@ a QR or bank fields. The field requirements are fixed:
 qr:             country + qr_content
 bank_transfer:  country + bank_name + account_number + holder_name
 mobile_money:   country + mobile_money_network_code + mobile_money_destination
+venmo:          country=US + venmo_phone
+paypal:         country=US + paypal_email + holder_name
 ```
 
 `mobile_money_destination` is an opaque provider-validatable value. Do not

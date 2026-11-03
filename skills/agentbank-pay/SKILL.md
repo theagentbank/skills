@@ -123,8 +123,6 @@ progress-reporting mutations. They are not exposed by the production server.
 - Use only a current server-generated payment instruction to move funds.
 - A transaction hash or successful receipt is not payment completion. Trust
   `get_payment`.
-- Do not expose partner identity. Current quote tools intentionally return
-  anonymous offers.
 
 Read [hosted.md](references/hosted.md) for "Hosted surface (consumer chats)".
 

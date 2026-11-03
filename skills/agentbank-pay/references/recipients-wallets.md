@@ -29,6 +29,8 @@ a QR or bank fields. The field requirements are fixed:
 qr:             country + qr_content
 bank_transfer:  country + bank_name + account_number + holder_name
 mobile_money:   country + mobile_money_network_code + mobile_money_destination
+venmo:          country=US + venmo_phone
+paypal:         country=US + paypal_email + holder_name
 ```
 
 `mobile_money_destination` is an opaque provider-validatable value. Do not
